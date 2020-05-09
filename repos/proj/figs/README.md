@@ -1,2 +1,2 @@
-# nba-repo-project
-Reproducible data analysis project on the 2019-2020 Chicago Bulls
+# The Figures Directory
+The directory contains any figures that I have generated from the R code
