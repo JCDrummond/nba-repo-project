@@ -1,4 +1,4 @@
-# nba-repo-project
+# NBA Reproducible Project
 ## ***Scenario and Aim of the Data Analysis Project***
 You are a data analyst with the Chicago Bulls competing in the NBA (National Basketball Association). In the most recent NBA season (2018-19), your team placed 27th out of 30 (for win-loss record). Your team's budget for player contracts next season  is $118 million, ranked 26th out of 30 (for the purpose of this assignment, next season is 2019-20). For context, the team with the highest payroll budget is Portland with $148 million, while the best performing team was Milwaukee Bucks [who clinched the best league record in 2018-19](https://www.espn.com/nba/standings/_/season/2019/group/league)  with $131 million. 
 
