@@ -1,0 +1,209 @@
+---
+title: "Exploring hockey data"
+author: "Josh Drummond"
+output:
+  html_document:
+    theme: darkly
+    highlight: breezedark
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview 
+
+This activity provides you with the opportunity to practice and work through a reproducible data analysis project. In this activity we will be exploring baseball data.
+
+## Load required packages
+
+```{r packages, message=FALSE}
+library(tidyverse) # include all required packages at the start
+```
+
+## Data source
+
+The data set used in this activity has been sourced from the Batting data frame from the Lahman package1, and saved in the batting.csv file.
+
+## Read data
+
+Read in the `batting.csv` file using the `read_csv()` function from the `readr` package. 
+
+```{r read_data, message=FALSE} 
+# read in the data
+# data dir should be in the working dir
+batting <- read_csv("batting.csv")
+```
+
+## Checking the data
+
+Check the structure of the data file using `str()`:
+
+```{r structure}
+str(batting)
+```
+
+Check the first 6 rows of the data file using `head()`
+
+```{r head}
+knitr::kable(head(batting))
+```
+
+Check the last 6 rows of the data file using `tail()`
+
+```{r tail}
+knitr::kable(tail(batting))
+```
+
+Look at data for just seasons 2008 to 2018:
+
+```{r filter}
+batting_filtered <- 
+  batting %>%
+  filter(between(yearID, 2008, 2018))
+
+batting_filtered
+```
+
+You can now see that there are 15768 observations in the new filtered data set. 
+
+## Team Summary Statistics
+
+Let's create some summary statistics for each team (teamID) per year (yearID)
+
+```{r summarising}
+batting_teams <- batting_filtered %>%
+  group_by(yearID, teamID) %>%
+  summarise_at(vars(c(AB:GIDP)), sum) # summarise_at() allows you to apply the same function to several variables
+
+batting_teams
+```
+
+Notice that in the batting_teams data we have variables for doubles X2B, triples X3B and home-runs HR, but not for singles (i.e. when a batter gets to first base). Lets reate a new variable called X1B 
+
+```{r X1B}
+batting_teams <- batting_teams %>%
+  mutate(X1B = H - HR - X2B - X3B)
+
+batting_teams
+```
+
+## Visualisation of Data
+
+A number of analytic methods we use have the assumption that our continuous variables are normally distributed.
+
+Create a histogram to visualise the distribution of runs to see how the distribution looks. 
+
+```{r histogram}
+ggplot(data = batting_teams, aes(x = R)) +
+  geom_histogram(binwidth = 25, colour = "deepskyblue1", fill = "darkorchid2")
+
+```
+
+### Add a density curve to the histogram
+
+```{r density}
+ggplot(data = batting_teams, aes(x = R)) +
+  geom_histogram(mapping = aes(y = ..density..), binwidth = 25, colour = "black", fill = "firebrick2") +
+  geom_density(alpha = 0.3, fill = "gold")
+
+```
+
+# On-base metrics relation with R
+
+```{r metric_relations}
+ggplot(data = batting_teams, aes(x = X1B, y = R)) +
+  geom_point(colour = "darkgreen", shape = 4, size = 2)
+
+ggplot(data = batting_teams, aes(x = X2B, y = R)) +
+  geom_point(colour = "dodgerblue", shape = 1, size = 2)
+
+ggplot(data = batting_teams, aes(x = X3B, y = R)) +
+  geom_point(colour = "purple", shape = 5, size = 3)
+```
+
+# Calculating On-Base Percentage (OBP)
+
+This is a measure of a batters ability to get on base (including walks BB). It was invented in the 1940-50s by Dodgers executive Branch Rickey and statistician Allan Roth, although did not become an official MLB statistic until 19842.
+
+### Equation of OBP
+OBP = (H + BB) / (AB + BB)
+
+```{r OBP}
+
+batting_teams <- batting_teams %>%
+  mutate(OBP = (H + BB) / (AB + BB))
+
+batting_teams
+
+```
+
+## Histogram of the OBP variable
+
+``` {r histogram_OBP}
+ggplot(data = batting_teams, aes(x = OBP)) +
+  geom_histogram(binwidth = 0.01, colour = "pink", fill = "turquoise1")
+
+```
+
+#### Adding density curve to the previous Histogram
+
+``` {r density_OBP}
+
+ggplot(data = batting_teams, aes(x = OBP)) +
+  geom_histogram(mapping = aes(y = ..density..), binwidth = 0.01, colour = "pink", fill = "turquoise1") +
+  geom_density(alpha = 0.3, fill = "black")
+
+```
+
+Creating the new variable of OBP_grouped that will show if the athlete 'at-bat' is above or below the average the mean on-base percentage across the team. 
+
+``` {r create_obp_grouped}
+
+batting_teams <- batting_teams %>%
+  mutate(OBP_grouped = if_else(OBP > mean(OBP), "above_average_OBP", "below_average_OBP"))
+
+```
+
+### Five number summary of OBP_grouped
+
+This boxplot shows the five number summary differences between above and below averaged OBP athletes and how the min, 25th percentile, median, 75th percentile and max differ between the two categories. 
+
+The boxplot below shows that teams that have an above average OBP tend to score more runs than teams that are below average. 
+
+``` {r boxplot}
+
+ggplot(data = batting_teams, aes(x = OBP_grouped, y = R)) +
+  geom_boxplot(aes(fill = OBP_grouped))
+
+```
+
+### Alternative ways to visualise the data
+
+Below we find two possible ways to visualise the distribution of runs (R) for each of the levels in the OBP_grouped variable. These two visualitions confirm our previous conclusion that above average OBP teams tend to score more then below average OBP teams. 
+
+If you get on base, you have a greater percentage of scoring. 
+
+``` {r visualising_alternative}
+
+ggplot(data = batting_teams, aes(x = R, colour = OBP_grouped)) +
+  geom_freqpoly()
+
+ggplot(data = batting_teams, aes(x = R, fill = OBP_grouped)) +
+  geom_histogram(colour = "black", binwidth = 20) +
+  facet_wrap(~OBP_grouped, nrow = 2) +
+  theme(legend.position = "none")
+
+```
+
+# Linear Regression between OBP and R
+
+``` {r linear_regression}
+
+ggplot(data = batting_teams, aes(x = OBP, y = R)) +
+     geom_point(colour = "dodgerblue", size = 2) + 
+     geom_smooth(method = "lm", colour = "magenta")
+
+```
