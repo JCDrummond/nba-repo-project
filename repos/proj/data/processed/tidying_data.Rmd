@@ -1,0 +1,48 @@
+---
+title: "Raw Data Transformation"
+author: "Josh Drummond"
+date: "10/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Tidying Data
+
+```{r library}
+# include all required packages at the start
+library(tidyverse) 
+library(prettydoc)
+library(broom)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(magrittr)
+library(naniar)
+library(stringi)
+library(tidyr)
+library(tinytex)
+library(packrat)
+library(haven)
+```
+
+## Confirm Working Directory
+
+```{r working-directory}
+getwd()
+
+setwd("/Users/josh/NBA/nba-repo-project/repos/proj")
+```
+
+## Read in the Data
+
+```{r read}
+p_stats <- read_csv("data/raw/2018-19_nba_player_statistics.csv")
+p_sal <- read_csv("data/raw/2018-19_nba_player-salaries.csv")
+team_stats <- read_csv("data/raw/2018-19_nba_team_statistics_1.csv")
+team_stats_2 <- read_csv("data/raw/2018-19_nba_team_statistics_2.csv")
+payroll <- read_csv("data/raw/2019-20_nba_team-payroll.csv")
+```
+
