@@ -13,7 +13,7 @@ output:
 ---
 <center>
 
-![**Champions: 1991, 1992, 1993, 1996, 1997, 1998**](docs/chicago-bulls_logo.png)  
+![**Champions: 1991, 1992, 1993, 1996, 1997, 1998 <br> Conference titles**](docs/chicago-bulls_logo.png)  
 
 </center> 
 
@@ -79,9 +79,125 @@ library(tinytex)
 
 ## Data source
 
-The data set used in this activity has been sourced from the Batting data frame from the Lahman package1, and saved in the batting.csv file.
+We have been provided the following data sets:
+1. 2018-19_nba_player-statistics.csv :  sourced from [basketball-reference.com](https://www.basketball-reference.com/leagues/NBA_2019_totals.html)
 
-## Read data
+2. 2018-19_nba_player-salaries.csv :  sourced from [hoopshype.com/salaries](https://hoopshype.com/salaries/)
 
-Read in the `batting.csv` file using the `read_csv()` function from the `readr` package. 
+3. 2019-20_nba_team-payroll.csv : sourced from [hoopshype.com/salaries](https://hoopshype.com/salaries/)
+
+4. 2018-19_nba_team-statistics_1.csv : sourced from [basketball-reference.com](https://www.basketball-reference.com/leagues/NBA_2019.html)
+
+5. 2018-19_nba_team-statistics_2.csv : sourced from [basketball-reference.com](https://www.basketball-reference.com/leagues/NBA_2019.html)
+
+## Read Data (Correct)
+
+Read in the various files using the `read_csv()` function from the `readr` package. 
+
+```{r read}
+p_stats <- read_csv("data/raw/2018-19_nba_player_statistics.csv")
+p_sal <- read_csv("data/raw/2018-19_nba_player-salaries.csv")
+team_stats <- read_csv("data/raw/2018-19_nba_team_statistics_1.csv")
+team_stats_2 <- read_csv("data/raw/2018-19_nba_team_statistics_2.csv")
+payroll <- read_csv("data/raw/2019-20_nba_team-payroll.csv")
+```
+
+## Tidying Data Process (Correct) 
+
+1. Rename the variables.
+```{r rename} 
+#Rename the variables to remove % and variables starting with numbers
+p_stats <- rename(p_stats,
+                  FGp = 'FG%', x3P = '3P', x3PA = '3PA', x3Pp = '3P%', x2P = '2P', x2PA = '2PA', x2Pp = '2P%', eFGp = 'eFG%', FTp = 'FT%') 
+team_stats <- rename(team_stats,
+                     x3PAr = '3PAr', TSp = 'TS%', eFGp = 'eFG%', TOVp = 'TOV%', ORBp = 'ORB%', DRBp = 'DRB%')
+team_stats_2 <- rename(team_stats_2,
+                       FGp = 'FG%', x3P = '3P', x3PA = '3PA', x3Pp = '3P%', x2P = '2P', x2PA = '2PA', x2Pp = '2P%', FTp = 'FT%')
+```
+
+## Dealing with NAs
+
+```{r na-replace-remove}
+#Replace the NAs found in shooting percentage of players who didn't attempt a particular shot
+p_stats <- p_stats %>%
+  mutate_if(is.numeric, funs(ifelse(is.na(.), 0, .)))
+#Remove the NA columns added at the end of the Salary and Team Stats variables
+p_sal <- p_sal[,-(4:7), drop = FALSE] # Removed columns 4 through to 7 that displayed no data
+team_stats <- team_stats[, -(23:25), drop = FALSE] # Removed columns 23 through to 25 that displayed no data
+
+```
+
+## Joining data frames
+
+```{r salary-player-join}
+p_sal <- subset(p_sal, select = c(2:3)) # First remove player id as not required data
+
+p_stats <- right_join(x = p_stats, y = p_sal) # This will join the salary to the respective Player
+
+p_stats <- drop_na(p_stats) # We're able to see that players salaries may have been included that either did not play through injury, retirement or sent to another league but remained in the salary cap. We remove these players from our list
+
+which(is.na(players_data), arr.ind = TRUE) # Quick test to identify if any NAs remain in the dataset
+```
+
+## Reorder Columns (Correct when we join Salary to the main data)
+
+```{r reorder-salary}
+players_data <- players_data[, c(1,2,3,4,30,5:29)] # Move the salary variable into a more logical position in the table
+players_data <- rename(players_data, Salary = 'salary') # Rename salary to Salary, to tidy up the appearance slightly.
+```
+
+## Filtering Data and Removing Duplicates (Correct filtering and removal of duplicates)
+
+```{r filter-mins-g}
+players_data <- players_data %>%
+  filter(G >= 20, MP >= 100) # Filter out and remove players that haven't played enough and who's data could influence decisions unnecessarily.  
+
+players_data <- players_data %>%
+  group_by(player_name) %>%
+  arrange(player_name, desc(G)) %>%
+  distinct(player_name, .keep_all = TRUE) # Will remove any duplicate players based on the amount of games played in that row. The highest amount of games played for the duplicated remains. Team variable 'TOT' stands for Two or More Teams so that is the row we want to keep.
+
+print(players_data)
+```
+
+## Removing accents and periods (Needs alteration)
+
+```{r removing-accents}
+x <- stringi::stri_trans_general(p_stats$player_name, "Latin-ASCII")
+ # Saves the player name list in new variable. Removes the accents and saves as a character vector
+
+x_new <- as.data.frame(x, row.names = NULL, optional = FALSE, stringsAsFactors = FALSE) # Converts the vector into a single column data frame
+
+x_new <- stringr::str_replace_all(x_new$x, pattern = "\\.", replacement = "") # Removes the periods in players names.
+
+x_new <- as.data.frame(x, row.names = NULL, optional = FALSE, stringsAsFactors = FALSE) # Converts the vector into a single column data frame
+
+x_new <- rename(x_new, player_name = 'x') # Changes column name to merge data frames
+
+p_stats <- bind_cols(x = x_new, y = p_stats) # Combines the no accent name variable to the main data frame. 
+
+p_stats <- subset(p_stats, select = -c(player_name1)) # Removes the player name variable that had the accents.
+```
+
+## Transforming the Data 
+#### New variables
+
+```{r new-variables}
+p_stats <- p_stats %>%
+  group_by(Pos) %>%
+  mutate(FTpm = FT / MP,
+         BLKpm = BLK / MP,
+         ASTpm = AST / MP,
+         STLpm = STL / MP,
+         TOVpm = TOV / MP,
+         x3Ppm = x3P / MP,
+         PPG = PTS / G,
+         APG = AST / G,
+         RPG = TRB / G) # Creates new variables at the end of our data frame
+
+p_stats <- format.data.frame(p_stats, digits = 3) # Rounds the new variables to 3 decimals places 
+
+p_stats <- arrange(p_stats, Pos) # Arranges the data frame in order of Position
+```
+
 

@@ -1636,12 +1636,12 @@ h4.date { /* Header 4 - and the author and data headers use this too  */
 <h2>Load required packages</h2>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="co"># include all required packages at the start</span></a>
 <a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">library</span>(tidyverse) </a></code></pre></div>
-<pre><code>## ── Attaching packages ───── tidyverse 1.3.0 ──</code></pre>
+<pre><code>## ── Attaching packages ───────────────────────────────────────────────────── tidyverse 1.3.0 ──</code></pre>
 <pre><code>## ✓ ggplot2 3.2.1     ✓ purrr   0.3.3
 ## ✓ tibble  2.1.3     ✓ dplyr   0.8.4
 ## ✓ tidyr   1.0.2     ✓ stringr 1.4.0
 ## ✓ readr   1.3.1     ✓ forcats 0.4.0</code></pre>
-<pre><code>## ── Conflicts ──────── tidyverse_conflicts() ──
+<pre><code>## ── Conflicts ──────────────────────────────────────────────────────── tidyverse_conflicts() ──
 ## x dplyr::filter() masks stats::filter()
 ## x dplyr::lag()    masks stats::lag()</code></pre>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">library</span>(prettydoc)</a>
@@ -1665,11 +1665,178 @@ h4.date { /* Header 4 - and the author and data headers use this too  */
 </div>
 <div id="data-source" class="section level2">
 <h2>Data source</h2>
-<p>The data set used in this activity has been sourced from the Batting data frame from the Lahman package1, and saved in the batting.csv file.</p>
+<p>We have been provided the following data sets: 1. 2018-19_nba_player-statistics.csv : sourced from <a href="https://www.basketball-reference.com/leagues/NBA_2019_totals.html">basketball-reference.com</a></p>
+<ol start="2" style="list-style-type: decimal">
+<li><p>2018-19_nba_player-salaries.csv : sourced from <a href="https://hoopshype.com/salaries/">hoopshype.com/salaries</a></p></li>
+<li><p>2019-20_nba_team-payroll.csv : sourced from <a href="https://hoopshype.com/salaries/">hoopshype.com/salaries</a></p></li>
+<li><p>2018-19_nba_team-statistics_1.csv : sourced from <a href="https://www.basketball-reference.com/leagues/NBA_2019.html">basketball-reference.com</a></p></li>
+<li><p>2018-19_nba_team-statistics_2.csv : sourced from <a href="https://www.basketball-reference.com/leagues/NBA_2019.html">basketball-reference.com</a></p></li>
+</ol>
 </div>
-<div id="read-data" class="section level2">
-<h2>Read data</h2>
-<p>Read in the <code>batting.csv</code> file using the <code>read_csv()</code> function from the <code>readr</code> package.</p>
+<div id="read-data-correct" class="section level2">
+<h2>Read Data (Correct)</h2>
+<p>Read in the various files using the <code>read_csv()</code> function from the <code>readr</code> package.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1">p_stats &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class="st">&quot;data/raw/2018-19_nba_player_statistics.csv&quot;</span>)</a></code></pre></div>
+<pre><code>## Parsed with column specification:
+## cols(
+##   .default = col_double(),
+##   player_name = col_character(),
+##   Pos = col_character(),
+##   Tm = col_character()
+## )</code></pre>
+<pre><code>## See spec(...) for full column specifications.</code></pre>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" data-line-number="1">p_sal &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class="st">&quot;data/raw/2018-19_nba_player-salaries.csv&quot;</span>)</a></code></pre></div>
+<pre><code>## Warning: Missing column names filled in: 'X4' [4], 'X5' [5], 'X6' [6], 'X7' [7]</code></pre>
+<pre><code>## Parsed with column specification:
+## cols(
+##   player_id = col_double(),
+##   player_name = col_character(),
+##   salary = col_double(),
+##   X4 = col_logical(),
+##   X5 = col_logical(),
+##   X6 = col_logical(),
+##   X7 = col_logical()
+## )</code></pre>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1">team_stats &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class="st">&quot;data/raw/2018-19_nba_team_statistics_1.csv&quot;</span>)</a></code></pre></div>
+<pre><code>## Warning: Missing column names filled in: 'X23' [23], 'X24' [24], 'X25' [25]</code></pre>
+<pre><code>## Parsed with column specification:
+## cols(
+##   .default = col_double(),
+##   Team = col_character(),
+##   X23 = col_logical(),
+##   X24 = col_logical(),
+##   X25 = col_logical()
+## )
+## See spec(...) for full column specifications.</code></pre>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" data-line-number="1">team_stats_<span class="dv">2</span> &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class="st">&quot;data/raw/2018-19_nba_team_statistics_2.csv&quot;</span>)</a></code></pre></div>
+<pre><code>## Parsed with column specification:
+## cols(
+##   .default = col_double(),
+##   Team = col_character()
+## )
+## See spec(...) for full column specifications.</code></pre>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" data-line-number="1">payroll &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class="st">&quot;data/raw/2019-20_nba_team-payroll.csv&quot;</span>)</a></code></pre></div>
+<pre><code>## Parsed with column specification:
+## cols(
+##   team_id = col_double(),
+##   team = col_character(),
+##   salary = col_character()
+## )</code></pre>
+</div>
+<div id="tidying-data-process-correct-may-need-to-add-when-accents-are-added" class="section level2">
+<h2>Tidying Data Process (Correct) // (May need to add when accents are added)</h2>
+<ol style="list-style-type: decimal">
+<li>Rename the variables.</li>
+</ol>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" data-line-number="1"><span class="co">#Rename the variables to remove % and variables starting with numbers</span></a>
+<a class="sourceLine" id="cb23-2" data-line-number="2">p_stats &lt;-<span class="st"> </span><span class="kw">rename</span>(p_stats,</a>
+<a class="sourceLine" id="cb23-3" data-line-number="3">                  <span class="dt">FGp =</span> <span class="st">'FG%'</span>, <span class="dt">x3P =</span> <span class="st">'3P'</span>, <span class="dt">x3PA =</span> <span class="st">'3PA'</span>, <span class="dt">x3Pp =</span> <span class="st">'3P%'</span>, <span class="dt">x2P =</span> <span class="st">'2P'</span>, <span class="dt">x2PA =</span> <span class="st">'2PA'</span>, <span class="dt">x2Pp =</span> <span class="st">'2P%'</span>, <span class="dt">eFGp =</span> <span class="st">'eFG%'</span>, <span class="dt">FTp =</span> <span class="st">'FT%'</span>) </a>
+<a class="sourceLine" id="cb23-4" data-line-number="4">team_stats &lt;-<span class="st"> </span><span class="kw">rename</span>(team_stats,</a>
+<a class="sourceLine" id="cb23-5" data-line-number="5">                     <span class="dt">x3PAr =</span> <span class="st">'3PAr'</span>, <span class="dt">TSp =</span> <span class="st">'TS%'</span>, <span class="dt">eFGp =</span> <span class="st">'eFG%'</span>, <span class="dt">TOVp =</span> <span class="st">'TOV%'</span>, <span class="dt">ORBp =</span> <span class="st">'ORB%'</span>, <span class="dt">DRBp =</span> <span class="st">'DRB%'</span>)</a>
+<a class="sourceLine" id="cb23-6" data-line-number="6">team_stats_<span class="dv">2</span> &lt;-<span class="st"> </span><span class="kw">rename</span>(team_stats_<span class="dv">2</span>,</a>
+<a class="sourceLine" id="cb23-7" data-line-number="7">                       <span class="dt">FGp =</span> <span class="st">'FG%'</span>, <span class="dt">x3P =</span> <span class="st">'3P'</span>, <span class="dt">x3PA =</span> <span class="st">'3PA'</span>, <span class="dt">x3Pp =</span> <span class="st">'3P%'</span>, <span class="dt">x2P =</span> <span class="st">'2P'</span>, <span class="dt">x2PA =</span> <span class="st">'2PA'</span>, <span class="dt">x2Pp =</span> <span class="st">'2P%'</span>, <span class="dt">FTp =</span> <span class="st">'FT%'</span>)</a></code></pre></div>
+</div>
+<div id="dealing-with-nas-correct" class="section level2">
+<h2>Dealing with NAs (Correct)</h2>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" data-line-number="1"><span class="co">#Replace the NAs found in shooting percentage of players who didn't attempt a particular shot</span></a>
+<a class="sourceLine" id="cb24-2" data-line-number="2">p_stats &lt;-<span class="st"> </span>p_stats <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb24-3" data-line-number="3"><span class="st">  </span><span class="kw">mutate_if</span>(is.numeric, <span class="kw">funs</span>(<span class="kw">ifelse</span>(<span class="kw">is.na</span>(.), <span class="dv">0</span>, .)))</a></code></pre></div>
+<pre><code>## Warning: funs() is soft deprecated as of dplyr 0.8.0
+## Please use a list of either functions or lambdas: 
+## 
+##   # Simple named list: 
+##   list(mean = mean, median = median)
+## 
+##   # Auto named with `tibble::lst()`: 
+##   tibble::lst(mean, median)
+## 
+##   # Using lambdas
+##   list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))
+## This warning is displayed once per session.</code></pre>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" data-line-number="1"><span class="co">#Remove the NA columns added at the end of the Salary and Team Stats variables</span></a>
+<a class="sourceLine" id="cb26-2" data-line-number="2">p_sal &lt;-<span class="st"> </span>p_sal[,<span class="op">-</span>(<span class="dv">4</span><span class="op">:</span><span class="dv">7</span>), drop =<span class="st"> </span><span class="ot">FALSE</span>] <span class="co"># Removed columns 4 through to 7 that displayed no data</span></a>
+<a class="sourceLine" id="cb26-3" data-line-number="3">team_stats &lt;-<span class="st"> </span>team_stats[, <span class="op">-</span>(<span class="dv">23</span><span class="op">:</span><span class="dv">25</span>), drop =<span class="st"> </span><span class="ot">FALSE</span>] <span class="co"># Removed columns 23 through to 25 that displayed no data</span></a></code></pre></div>
+</div>
+<div id="joining-data-frames" class="section level2">
+<h2>Joining data frames</h2>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" data-line-number="1">p_sal &lt;-<span class="st"> </span><span class="kw">subset</span>(p_sal, <span class="dt">select =</span> <span class="kw">c</span>(<span class="dv">2</span><span class="op">:</span><span class="dv">3</span>)) <span class="co"># First remove player id as not required data</span></a>
+<a class="sourceLine" id="cb27-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb27-3" data-line-number="3">players_data &lt;-<span class="st"> </span><span class="kw">left_join</span>(<span class="dt">x =</span> p_stats, <span class="dt">y =</span> p_sal,</a>
+<a class="sourceLine" id="cb27-4" data-line-number="4">                         <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">&quot;player_name&quot;</span>)) <span class="co"># This will join the salary to the respective Player</span></a>
+<a class="sourceLine" id="cb27-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb27-6" data-line-number="6">players_data &lt;-<span class="st"> </span><span class="kw">drop_na</span>(players_data) <span class="co"># We can see that some PLayer salaries are missing, so we must remove these from our dataset to ensure we are 100% confident that our picks will keep us under the salary cap. </span></a>
+<a class="sourceLine" id="cb27-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb27-8" data-line-number="8"><span class="kw">which</span>(<span class="kw">is.na</span>(players_data), <span class="dt">arr.ind =</span> <span class="ot">TRUE</span>) <span class="co"># Quick test to identify if any NAs remain in the dataset</span></a></code></pre></div>
+<pre><code>##      row col</code></pre>
+</div>
+<div id="reorder-columns-correct-when-we-join-salary-to-the-main-data" class="section level2">
+<h2>Reorder Columns (Correct when we join Salary to the main data)</h2>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" data-line-number="1">players_data &lt;-<span class="st"> </span>players_data[, <span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">30</span>,<span class="dv">5</span><span class="op">:</span><span class="dv">29</span>)] <span class="co"># Move the salary variable into a more logical position in the table</span></a>
+<a class="sourceLine" id="cb29-2" data-line-number="2">players_data &lt;-<span class="st"> </span><span class="kw">rename</span>(players_data, <span class="dt">Salary =</span> <span class="st">'salary'</span>) <span class="co"># Rename salary to Salary, to tidy up the appearance slightly.</span></a></code></pre></div>
+</div>
+<div id="filtering-data-and-removing-duplicates-correct-filtering-and-removal-of-duplicates" class="section level2">
+<h2>Filtering Data and Removing Duplicates (Correct filtering and removal of duplicates)</h2>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb30-1" data-line-number="1">players_data &lt;-<span class="st"> </span>players_data <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb30-2" data-line-number="2"><span class="st">  </span><span class="kw">filter</span>(G <span class="op">&gt;=</span><span class="st"> </span><span class="dv">20</span>, MP <span class="op">&gt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="co"># Filter out and remove players that haven't played enough and who's data could influence decisions unnecessarily.  </span></a>
+<a class="sourceLine" id="cb30-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb30-4" data-line-number="4">players_data &lt;-<span class="st"> </span>players_data <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb30-5" data-line-number="5"><span class="st">  </span><span class="kw">group_by</span>(player_name) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb30-6" data-line-number="6"><span class="st">  </span><span class="kw">arrange</span>(player_name, <span class="kw">desc</span>(G)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb30-7" data-line-number="7"><span class="st">  </span><span class="kw">distinct</span>(player_name, <span class="dt">.keep_all =</span> <span class="ot">TRUE</span>) <span class="co"># Will remove any duplicate players based on the amount of games played in that row. The highest amount of games played for the duplicated remains. Team variable 'TOT' stands for Two or More Teams so that is the row we want to keep.</span></a>
+<a class="sourceLine" id="cb30-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb30-9" data-line-number="9"><span class="kw">print</span>(players_data)</a></code></pre></div>
+<pre><code>## # A tibble: 382 x 30
+## # Groups:   player_name [382]
+##    player_name Pos     Age Tm    Salary     G    GS    MP    FG   FGA   FGp
+##    &lt;chr&gt;       &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+##  1 Aaron Gord… PF       23 ORL   2.16e7    78    78  2633   470  1046 0.449
+##  2 Aaron Holi… PG       22 IND   1.91e6    50     0   646   105   262 0.401
+##  3 Abdel Nader SF       25 OKC   1.38e6    61     1   694    91   215 0.423
+##  4 Al Horford  C        32 BOS   2.89e7    68    68  1973   387   723 0.535
+##  5 Al-Farouq … PF       28 POR   6.96e6    81    81  2292   257   593 0.433
+##  6 Alec Burks  SG       27 TOT   1.15e7    64    24  1375   192   474 0.405
+##  7 Alex Abrin… SG       25 OKC   3.67e6    31     2   588    56   157 0.357
+##  8 Alex Caruso PG       24 LAL   7.72e4    25     4   531    77   173 0.445
+##  9 Alex Len    C        25 ATL   4.35e6    77    31  1544   320   648 0.494
+## 10 Alex Poyth… PF       25 ATL   7.72e4    21     1   305    40    81 0.494
+## # … with 372 more rows, and 19 more variables: x3P &lt;dbl&gt;, x3PA &lt;dbl&gt;,
+## #   x3Pp &lt;dbl&gt;, x2P &lt;dbl&gt;, x2PA &lt;dbl&gt;, x2Pp &lt;dbl&gt;, eFGp &lt;dbl&gt;, FT &lt;dbl&gt;,
+## #   FTA &lt;dbl&gt;, FTp &lt;dbl&gt;, ORB &lt;dbl&gt;, DRB &lt;dbl&gt;, TRB &lt;dbl&gt;, AST &lt;dbl&gt;,
+## #   STL &lt;dbl&gt;, BLK &lt;dbl&gt;, TOV &lt;dbl&gt;, PF &lt;dbl&gt;, PTS &lt;dbl&gt;</code></pre>
+</div>
+<div id="removing-accents-and-periods-needs-alteration" class="section level2">
+<h2>Removing accents and periods (Needs alteration)</h2>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb32-1" data-line-number="1">x &lt;-<span class="st"> </span>stringi<span class="op">::</span><span class="kw">stri_trans_general</span>(p_stats<span class="op">$</span>player_name, <span class="st">&quot;Latin-ASCII&quot;</span>)</a>
+<a class="sourceLine" id="cb32-2" data-line-number="2"> <span class="co"># Saves the player name list in new variable. Removes the accents and saves as a character vector</span></a>
+<a class="sourceLine" id="cb32-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb32-4" data-line-number="4">x_new &lt;-<span class="st"> </span><span class="kw">as.data.frame</span>(x, <span class="dt">row.names =</span> <span class="ot">NULL</span>, <span class="dt">optional =</span> <span class="ot">FALSE</span>, <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>) <span class="co"># Converts the vector into a single column data frame</span></a>
+<a class="sourceLine" id="cb32-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb32-6" data-line-number="6">x_new &lt;-<span class="st"> </span><span class="kw">rename</span>(x_new, <span class="dt">player_name =</span> <span class="st">'x'</span>) <span class="co"># Changes column name to merge data frames</span></a>
+<a class="sourceLine" id="cb32-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb32-8" data-line-number="8">sal_new &lt;-<span class="st"> </span><span class="kw">right_join</span>(<span class="dt">x =</span> x_new, <span class="dt">y =</span> p_sal) <span class="co"># Combines the no accent name variable to the main data frame. </span></a></code></pre></div>
+<pre><code>## Joining, by = &quot;player_name&quot;</code></pre>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb34-1" data-line-number="1">p_stats<span class="op">$</span>player_name &lt;-<span class="st"> </span><span class="ot">NULL</span> <span class="co"># Removes the player name variable that had the accents.</span></a></code></pre></div>
+</div>
+<div id="transforming-the-data" class="section level2">
+<h2>Transforming the Data</h2>
+<div id="new-variables" class="section level4">
+<h4>New variables</h4>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb35-1" data-line-number="1">p_stats &lt;-<span class="st"> </span>p_stats <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb35-2" data-line-number="2"><span class="st">  </span><span class="kw">group_by</span>(Pos) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb35-3" data-line-number="3"><span class="st">  </span><span class="kw">mutate</span>(<span class="dt">FTpm =</span> FT <span class="op">/</span><span class="st"> </span>MP,</a>
+<a class="sourceLine" id="cb35-4" data-line-number="4">         <span class="dt">BLKpm =</span> BLK <span class="op">/</span><span class="st"> </span>MP,</a>
+<a class="sourceLine" id="cb35-5" data-line-number="5">         <span class="dt">ASTpm =</span> AST <span class="op">/</span><span class="st"> </span>MP,</a>
+<a class="sourceLine" id="cb35-6" data-line-number="6">         <span class="dt">STLpm =</span> STL <span class="op">/</span><span class="st"> </span>MP,</a>
+<a class="sourceLine" id="cb35-7" data-line-number="7">         <span class="dt">TOVpm =</span> TOV <span class="op">/</span><span class="st"> </span>MP,</a>
+<a class="sourceLine" id="cb35-8" data-line-number="8">         <span class="dt">x3Ppm =</span> x3P <span class="op">/</span><span class="st"> </span>MP,</a>
+<a class="sourceLine" id="cb35-9" data-line-number="9">         <span class="dt">PPG =</span> PTS <span class="op">/</span><span class="st"> </span>G,</a>
+<a class="sourceLine" id="cb35-10" data-line-number="10">         <span class="dt">APG =</span> AST <span class="op">/</span><span class="st"> </span>G,</a>
+<a class="sourceLine" id="cb35-11" data-line-number="11">         <span class="dt">RPG =</span> TRB <span class="op">/</span><span class="st"> </span>G) <span class="co"># Creates new variables at the end of our data frame</span></a>
+<a class="sourceLine" id="cb35-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb35-13" data-line-number="13">p_stats &lt;-<span class="st"> </span><span class="kw">format.data.frame</span>(p_stats, <span class="dt">digits =</span> <span class="dv">3</span>) <span class="co"># Rounds the new variables to 3 decimals places </span></a>
+<a class="sourceLine" id="cb35-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb35-15" data-line-number="15">p_stats &lt;-<span class="st"> </span><span class="kw">arrange</span>(p_stats, Pos) <span class="co"># Arranges the data frame in order of Position</span></a></code></pre></div>
+</div>
 </div>
 
 
