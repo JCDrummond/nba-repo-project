@@ -312,7 +312,7 @@ TSP_wins
 
 cor(x = comb_team$TSp, y = comb_team$W, method = "pearson")
 
-TSP_wins_lm <- lm(W ~ TSP, data = comb_team)
+TSP_wins_lm <- lm(W ~ TSp, data = comb_team)
 summary(TSP_wins_lm)
 
 predict(TSP_wins_lm)
@@ -526,7 +526,7 @@ cor(x = comb_team$x3Pp, y = comb_team$W, method = "pearson")
 x3pp_w_lm <- lm(W ~ x3Pp, data = comb_team)
 summary(x3pp_w_lm)
 
-predict(x2pp_w_lm)
+predict(x3pp_w_lm)
 ```
 
 *Three Point Percentage v Offensive Rating*
@@ -543,7 +543,7 @@ cor(x = comb_team$x3Pp, y = comb_team$ORtg, method = "pearson")
 x3pp_ortg_lm <- lm(ORtg ~ x3Pp, data = comb_team)
 summary(x3pp_ortg_lm)
 
-predict(x2pp_ortg_lm)
+predict(x3pp_ortg_lm)
 ```
 
 *Two Point Percentage v Wins*
