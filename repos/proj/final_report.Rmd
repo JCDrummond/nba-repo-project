@@ -544,7 +544,7 @@ c_overall_tidy_pts <- lm(PTS ~ AST + DRB + ORB + BLK + TOV, data = centres)
 tidy(c_overall_tidy_pts, conf.int = TRUE) # Values players based on successful actions and their relative contribution to external actions not involved with points, specific to Centres
 ```
 
-```{r selected-team, include = FALSE, warning = FALSE}
+```{r selected-team}
 selected_player_pg <- pg %>%
   filter(player_name == "D'Angelo Russell") # Filter for the chosen PG
 
@@ -742,7 +742,7 @@ Let’s break it down, position by position to allow us to see our positional sc
 
 ### Point Guard
 
-Clearly James Harden is the leader in not only the Point Guard Position, but as a star of the competition, however, this analysis allows us to identify players like Kemba Walker, D’Angelo Russell, Trae Young who can have big impacts at a fraction of James Harden’s cost. 
+Clearly James Harden is the leader in not only the Point Guard Position, but as a star of the competition, however, this analysis allows us to identify players like Kemba Walker, D’Angelo Russell, Trae Young who can have big impacts at a fraction of James Harden’s cost, while still having the overall impact as the likes of Damian Lillard, Kyrie Irving and Mike Conley
 
 ```{r pts_predict_pg, echo = FALSE, message = FALSE, warning = FALSE}
 final_pg_ppg_pts_predict <- pg %>%
@@ -760,94 +760,6 @@ final_pg_ppg_pts_predict <- pg %>%
 
 final_pg_ppg_pts_predict # Prints the output
 ```
-
-### Shooting Guard
-
-Bradley Beal had a breakout season last year and is now the premier Shooting Guard, but he comes at a cost. Young players who have stepped into the game and dominated consistently across 2-4 seasons do not command the same price tag as Bradley, their output may not be on the same level, but the cost margin to predicted output is beneficial to us rebuilding our starting 5. 
-
-```{r pts_predict_sg, echo = FALSE, message = FALSE, warning = FALSE}
-final_sg_ppg_pts_predict <- sg %>%
-  filter(PPG >= 10) %>% # This will filter out Shooting Guards who score under 10 Points Per Game
-  mutate(sg_r_hat = predict(sg_overall_tidy_ppg, newdata = .)) %>%
-  ggplot(aes(sg_r_hat, PTS, label = player_name)) +
-  geom_point(colour = "Red", alpha = 0.8) +
-  geom_text(nudge_x = 2, cex = 2) +
-  geom_smooth() + # This formula will predict each Shooting Guards predicted Points Per Game against their actual output
-  labs(title = "Predicted Points in comparison to Actual Points Output",
-       subtitle = "Identifying Shooting Guards who perform to expected levels",
-       x = "Predicted Points Per Game Average",
-       y = "Total Points") + # Changing and configuring the Titles of the graph
-  theme_linedraw() # Changing the theme of the graph.
-
-final_sg_ppg_pts_predict # Prints the output
-```
-
-### Small Forward
-
-The position most desirable by all teams. There aren’t enough Kevin Durant and Lebron James running around in the league, and is evident by this breakdown, the cheaper players are indeed a long way off the level of these league leaders. By playing the moneybag game across 3-4 starting positions, it allows us the opportunity to sign a Franchise Player, something that must be considered to improve our offensive rating.
-
-```{r pts_predict_sf, echo = FALSE, message = FALSE, warning = FALSE}
-final_sf_ppg_pts_predict <- sf %>%
-  filter(PPG >= 10) %>% # This will filter out Small Forwards who score under 10 Points Per Game
-  mutate(sf_r_hat = predict(sf_overall_tidy_ppg, newdata = .)) %>%
-  ggplot(aes(sf_r_hat, PTS, label = player_name)) +
-  geom_point(colour = "Red", alpha = 0.8) +
-  geom_text(nudge_x = 2, cex = 2) +
-  geom_smooth() + # This formula will predict each Small Forwards predicted Points Per Game against their actual output
-  labs(title = "Predicted Points in comparison to Actual Points Output",
-       subtitle = "Identifying Small Forwards who perform to expected levels",
-       x = "Predicted Points Per Game Average",
-       y = "Total Points") + # Changing and configuring the Titles of the graph
-  theme_linedraw() # Changing the theme of the graph.
-
-final_sf_ppg_pts_predict # Prints the output
-```
-
-### Power Forward
-
-A group of 4 have identified their position as premier big men in the competition and from there we’ll be able to target the cheaper alternative than the clear choice of Giannis Antentokounmpo. 
-
-```{r pts_predict_pf, echo = FALSE, message = FALSE, warning = FALSE}
-final_pf_ppg_pts_predict <- pf %>%
-  filter(PPG >= 10) %>% # This will filter out Centres who score under 10 Points Per Game
-  mutate(pf_r_hat = predict(pf_overall_tidy_ppg, newdata = .)) %>%
-  ggplot(aes(pf_r_hat, PTS, label = player_name)) +
-  geom_point(colour = "Red", alpha = 0.8) +
-  geom_text(nudge_x = 2, cex = 2) +
-  geom_smooth() + # This formula will predict each Centres predicted Points Per Game against their actual output 
-  labs(title = "Predicted Points in comparison to Actual Points Output",
-       subtitle = "Identifying Power Forwards who perform to expected levels",
-       x = "Predicted Points Per Game Average",
-       y = "Total Points") + # Changing and configuring the Titles of the graph 
-  theme_linedraw() # Changing the theme of the graph.
-
-final_pf_ppg_pts_predict # Prints the output
-```
-
-### Centres
-
-Much like the results from the Power Forward section, the Centres have a clear group standing out above the rest, and what is interesting is that they are generally not paid highly compared to the other positions as a very generalised rule. This can be where we can make a huge step forward by taking a cheap centre who’s output goes way beyond their worth. 
-
-```{r pts_predict_c, echo = FALSE, message = FALSE, warning = FALSE}
-final_c_ppg_pts_predict <- centres %>%
-  filter(PPG >= 10) %>% # This will filter out Centres who score under 10 Points Per Game
-  mutate(c_r_hat = predict(c_overall_tidy_ppg, newdata = .)) %>%
-  ggplot(aes(c_r_hat, PTS, label = player_name)) +
-  geom_point(colour = "Red", alpha = 0.8) +
-  geom_text(nudge_x = 2, cex = 2) +
-  geom_smooth() + # This formula will predict each Centres predicted Points Per Game against their actual output 
-  labs(title = "Predicted Points in comparison to Actual Points Output",
-       subtitle = "Identifying Centres who perform to expected levels",
-       x = "Predicted Points Per Game Average",
-       y = "Total Points") + # Changing and configuring the Titles of the graph 
-  theme_linedraw() # Changing the theme of the graph.
-
-final_c_ppg_pts_predict # Prints the output # Prints the output
-```
-
-# Competition's Elite Performers Broken Down By Predicted Points And Their Salary
-
-### Point Guard
 
 ```{r creating_final_graphs6, echo = FALSE, message = FALSE, warning = FALSE}
 ## Point Guard
@@ -872,6 +784,25 @@ final_pg_salary
 
 ### Shooting Guard
 
+Bradley Beal had a breakout season last year and is now the premier Shooting Guard, but he comes at a cost. Young players who have stepped into the game and dominated consistently across 2-4 seasons do not command the same price tag as Bradley, their output may not be on the same level, but the cost margin to predicted output is beneficial to us rebuilding our starting 5. Here we can look at Devin Booker, Donovan Mitchell and Buddy Heild as a cheaper but equally productive option. 
+
+```{r pts_predict_sg, echo = FALSE, message = FALSE, warning = FALSE}
+final_sg_ppg_pts_predict <- sg %>%
+  filter(PPG >= 10) %>% # This will filter out Shooting Guards who score under 10 Points Per Game
+  mutate(sg_r_hat = predict(sg_overall_tidy_ppg, newdata = .)) %>%
+  ggplot(aes(sg_r_hat, PTS, label = player_name)) +
+  geom_point(colour = "Red", alpha = 0.8) +
+  geom_text(nudge_x = 2, cex = 2) +
+  geom_smooth() + # This formula will predict each Shooting Guards predicted Points Per Game against their actual output
+  labs(title = "Predicted Points in comparison to Actual Points Output",
+       subtitle = "Identifying Shooting Guards who perform to expected levels",
+       x = "Predicted Points Per Game Average",
+       y = "Total Points") + # Changing and configuring the Titles of the graph
+  theme_linedraw() # Changing the theme of the graph.
+
+final_sg_ppg_pts_predict # Prints the output
+```
+
 ```{r creating_final_graphs5, echo = FALSE, message = FALSE, warning = FALSE}
 ## Shooting Guard
 sg_pts_hat <- sg %>%
@@ -894,6 +825,26 @@ final_sg_salary
 ```
 
 ### Small Forward
+
+The position most desirable by all teams. There aren’t enough Kevin Durant and Lebron James running around in the league, and is evident by this breakdown, the cheaper players are indeed a long way off the level of these league leaders. By playing the moneybag game across 3-4 starting positions, it allows us the opportunity to sign a Franchise Player, something that must be considered to improve our offensive rating.
+With no cheap prospect performing to an extremely high level, we can settle for a player like Khris Middleton or Jayson Tatum, or we can go for the stars and use our salary cap on the likes of Kevin Durant or Paul George. 
+
+```{r pts_predict_sf, echo = FALSE, message = FALSE, warning = FALSE}
+final_sf_ppg_pts_predict <- sf %>%
+  filter(PPG >= 10) %>% # This will filter out Small Forwards who score under 10 Points Per Game
+  mutate(sf_r_hat = predict(sf_overall_tidy_ppg, newdata = .)) %>%
+  ggplot(aes(sf_r_hat, PTS, label = player_name)) +
+  geom_point(colour = "Red", alpha = 0.8) +
+  geom_text(nudge_x = 2, cex = 2) +
+  geom_smooth() + # This formula will predict each Small Forwards predicted Points Per Game against their actual output
+  labs(title = "Predicted Points in comparison to Actual Points Output",
+       subtitle = "Identifying Small Forwards who perform to expected levels",
+       x = "Predicted Points Per Game Average",
+       y = "Total Points") + # Changing and configuring the Titles of the graph
+  theme_linedraw() # Changing the theme of the graph.
+
+final_sf_ppg_pts_predict # Prints the output
+```
 
 ```{r creating_final_graphs3, echo = FALSE, message = FALSE, warning = FALSE}
 ## Small Forward
@@ -918,6 +869,25 @@ final_sf_salary
 
 ### Power Forward
 
+A group of 4 have identified their position as premier big men in the competition and from there we’ll be able to target the cheaper alternative than the clear choice of Giannis Antetokounmpo. Julius Randle and Tobias Harris stand out above the rest benefitting from a lower salary with good offensive production. Their defensive stats will be what differentiates them. 
+
+```{r pts_predict_pf, echo = FALSE, message = FALSE, warning = FALSE}
+final_pf_ppg_pts_predict <- pf %>%
+  filter(PPG >= 10) %>% # This will filter out Centres who score under 10 Points Per Game
+  mutate(pf_r_hat = predict(pf_overall_tidy_ppg, newdata = .)) %>%
+  ggplot(aes(pf_r_hat, PTS, label = player_name)) +
+  geom_point(colour = "Red", alpha = 0.8) +
+  geom_text(nudge_x = 2, cex = 2) +
+  geom_smooth() + # This formula will predict each Centres predicted Points Per Game against their actual output 
+  labs(title = "Predicted Points in comparison to Actual Points Output",
+       subtitle = "Identifying Power Forwards who perform to expected levels",
+       x = "Predicted Points Per Game Average",
+       y = "Total Points") + # Changing and configuring the Titles of the graph 
+  theme_linedraw() # Changing the theme of the graph.
+
+final_pf_ppg_pts_predict # Prints the output
+```
+
 ```{r creating_final_graphs4, echo = FALSE, message = FALSE, warning = FALSE}
 ## Power Forward
 pf_pts_hat <- pf %>%
@@ -940,6 +910,27 @@ final_pf_salary
 ```
 
 ### Centres
+
+Much like the results from the Power Forward section, the Centres have a clear group standing out above the rest, and what is interesting is that they are generally not paid highly compared to the other positions as a very generalised rule. This can be where we can make a huge step forward by taking a cheap centre who’s output goes way beyond their worth. 
+
+Karl-Anthony Towns. *He's our target*
+
+```{r pts_predict_c, echo = FALSE, message = FALSE, warning = FALSE}
+final_c_ppg_pts_predict <- centres %>%
+  filter(PPG >= 10) %>% # This will filter out Centres who score under 10 Points Per Game
+  mutate(c_r_hat = predict(c_overall_tidy_ppg, newdata = .)) %>%
+  ggplot(aes(c_r_hat, PTS, label = player_name)) +
+  geom_point(colour = "Red", alpha = 0.8) +
+  geom_text(nudge_x = 2, cex = 2) +
+  geom_smooth() + # This formula will predict each Centres predicted Points Per Game against their actual output 
+  labs(title = "Predicted Points in comparison to Actual Points Output",
+       subtitle = "Identifying Centres who perform to expected levels",
+       x = "Predicted Points Per Game Average",
+       y = "Total Points") + # Changing and configuring the Titles of the graph 
+  theme_linedraw() # Changing the theme of the graph.
+
+final_c_ppg_pts_predict # Prints the output # Prints the output
+```
 
 ```{r creating_final_graphs, echo = FALSE, message = FALSE, warning = FALSE}
 # Value in Predicted Output
@@ -969,11 +960,14 @@ final_c_salary
 
 ![**Point Guard: Kemba Walker**](docs/kemba-walker.png)  
 
+```{r kemba-walker, echo = FALSE, warning = FALSE}
+selected_player_pg_2 <- pg %>%
+  filter(player_name == "Kemba Walker") # Filter for the chosen PG
 
+datatable(selected_player_pg_2, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
+```
 
-
-
-We have chosen Kemba Walker, explain why here.
+The player to target after this analysis, is Kemba Walker. An elite scoring Point Guard who has the ability to pass the ball to his teammates. A durable player, who played all 82 games last season, comes at a cost of $12,000,000 for the season. He shoots at average 43% across the board, which is elite and has a 2 Point Percentage of 49.4% for the season. This offensive powerhouse averaged 25/6/4 last season, players with that output and at that price are rare. We need to seize this opportunity to attract a dominant Point Guard in Kemba Walker. 
 
 
 <center>
@@ -981,11 +975,14 @@ We have chosen Kemba Walker, explain why here.
 
 ![**Shooting Guard: Donovan Mitchll**](docs/donovan-mitchell.png)  
 
+```{r donovan-mitchell, echo = FALSE, warning = FALSE}
+selected_player_sg <- sg %>%
+  filter(player_name == "Donovan Mitchell") # Filter for the chosen SG
 
+datatable(selected_player_sg, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
+```
 
-
-
-We have chosen Donovan Mitchell, explain why here.
+Donovan Mitchell is the ideal Shooting Guard who can play the back up Point Guard role extremely well. His ability to be versatile in shooting, passing and also gathering rebounds is important in the make-up of our team. Averaging an assist and a rebound every 10 minutes on the floor is an impressive stat and with a salary of $3,111,480 it is a small price to pay for the star's averages of 23/4/4. 
 
 
 <center>
@@ -993,11 +990,17 @@ We have chosen Donovan Mitchell, explain why here.
 
 ![**Small Forward: Kevin Durant**](docs/kevin-durant.png)  
 
+```{r kevin-durant, echo = FALSE, warning = FALSE}
+selected_player_sf <- sf %>%
+  filter(player_name == "Kevin Durant") # Filter for the chosen SF
 
+datatable(selected_player_sf, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
+```
 
+Invest, spend and forget. That is the mantra to take with selecting Kevin Durant as our starting Small Forward. The All-Star comes with a price tag of $30,000,000 but with the small investment on Donovan Mitchell and the remaining two starters, the salary squeeze is not as hard felt. Kevin is our offensive juggernaut, who'll increase our Offensive Rating by a considerable margin. It's important to note, that we are 9 rating points behind the mean, this is something that Kevin will impact greatly and it'll benefit the whole Chicago Bulls organisation. He shoots at an overall percentage of 52.1%, a player like this can change the future of an organisation. 
 
-
-We have chosen Kevin Durant, explain why here.
+Do not forget... More Points = More Wins.
+This man does this and more. 
 
 
 <center>
@@ -1005,11 +1008,18 @@ We have chosen Kevin Durant, explain why here.
 
 ![**Power Forward: Julius Randle**](docs/julius-randle.png)  
 
+```{r julius-randle, echo = FALSE, warning = FALSE}
+selected_player_pf_2 <- pf %>%
+  filter(player_name == "Julius Randle") # Filter for the chosen PF
 
+datatable(selected_player_pf_2, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
+```
 
+We discussed how the Power Forward must be able to shoot the 3 pointer if required. Julius Randle fits the mould of the prototype new age Power Forward. He shoots the ball well from beyond the arc at 34.4%, and as an overall shooting percentage of 52.4%. He defends well, recording a block every 1.5 games with a similar rate in steals. His rebounding is what sets his defence up, recording nearly 9 rebounds a game on average.
 
+His production is below that of Giannis and Blake Griffin, but his price tage is astonishingly lower at $8,641,000. This shrewd saving and investment is the reason why Kevin Durant becomes available to our organisation. 
 
-We have chosen Julius Randle, explain why here.
+He only started in 49 of a possible 73 games last season, so his potential to increase his averages is extremely possible as his Points, Rebounds Blocks Per Minute rate is substantially higher than players in the Power Forward position. 
 
 
 <center>
@@ -1017,29 +1027,26 @@ We have chosen Julius Randle, explain why here.
 
 ![**Centre: Karl-Anthony Towns**](docs/karl-anthony-towns.png)  
 
+```{r karl-anthony-towns, echo = FALSE, warning = FALSE}
+selected_player_c <- centres %>%
+  filter(player_name == "Karl-Anthony Towns") # Filter for the chosen C
+
+datatable(selected_player_c, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
+```
+
+Karl-Anthony Towns was the eaisest selection to make. He is the dominant Centre in the league, leading in many areas. The price tag on him does not reflect his output. To receive a player of his talent and results that'll only cost $7,839,435 is too good an option to not select. Averages a block every 20 minutes on the floor, close to a point a minute as well as averaging a rebound every 2 minutes is incredible and his talent far outweighs his price tag.
+
+As was evident in the graphs above, he perfectly situated in the desired quadrant of output against production. 
+
+
+*Overall, our team above will be offensively superior to many teams. Our offensive rating, if as predicted remains the same with the current team, we'll be unable to challenge for a spot in the playoffs. With these changes, would we not only be challenging for that top 8 spot, we can be considered a legitimate Championship calibre team if our offense delivers what the predictions and the algorithms believe to be a true reflection of their potential.*
+
+<br>
 
 
 
-
-We have chosen Karl-Anthony Towns, explain why here.
+</br>
 
 
 </center>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
