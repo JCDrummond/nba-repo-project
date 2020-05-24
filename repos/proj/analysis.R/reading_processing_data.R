@@ -1,14 +1,10 @@
 
 ## Overview 
 
-## This assessment task allows you to consolidate and apply the concepts and skills you've learnt throughout the semester. This assessment requires you to generate a **reproducible data analysis project.** 
-
+## This assessment task allows you to consolidate and apply the concepts and skills you've learnt throughout the semester. This assessment requires you to generate a reproducible data analysis project.
 ## Your reproducible data analysis project will be hosted as a repository on GitHub and you are required to submit the URL to your GitHub repository.
-
 ## Scenario and Aim of the Data Analysis Project
-
 ## You are a data analyst with the Chicago Bulls competing in the NBA (national basketball association). In the most recent NBA season (2018-19), your team placed 27th out of 30 (for win-loss record). Your team's budget for player contracts next season  is $118 million, ranked 26th out of 30 (for the purpose of this assignment, next season is 2019-20). For context, the team with the highest payroll budget is Portland with $148 million, while the best performing team was Milwaukee Bucks (who clinched the best league record in 2018-19 [who clinched the best league record in 2018-29](https://www.espn.com/nba/standings/_/season/2019/group/league)) with $131 million. 
-
 ## You have been tasked by the general manager of Chicago Bulls to find the best five starting players [one from each position](https://en.wikipedia.org/wiki/Basketball_positions)) your team can afford. (Make sure you don't use up all of your money on just these five players, you still need to fill a full team roster, but are just focussed on finding five starting players here). You can choose players that are already playing for Chicago Bulls, you just need to prove that they are worth it.
 
 ## Load required packages
@@ -28,7 +24,6 @@ library(tinytex)
 
 
 ## Data source
-
 ##We have been provided the following data sets:
 ##1. 2018-19_nba_player-statistics.csv :  sourced from [basketball-reference.com](https://www.basketball-reference.com/leagues/NBA_2019_totals.html)
 
@@ -154,4 +149,39 @@ p_stats <- p_stats %>%
 kable(cbind(p_stats)) %>%
   kable_styling("bordered") %>%
   scroll_box(width = "100%", height = "200px") # Formatting the table with a scroll box so that it doesn't take up a considerable amount of the page. 
+
+# Writing and saving the combined and new processed/tidy data. 
+write_csv(x = p_stats, path = "data/processed/p_stats.csv")
+
+write_csv(x = comb_team, path = "data/processed/p_stats.csv")
+
+
+
+## Position Specific Data Frames
+
+# New Data Frames for Specific Position outlined below to be able to analyse the specific details for position specific data. 
+
+centres <- subset(p_stats, Pos == "C")
+
+sg <- subset(p_stats, Pos == "SG")
+
+sf <- subset(p_stats, Pos == "SF")
+
+pf <- subset(p_stats, Pos == "PF")
+
+pg <- subset(p_stats, Pos == "PG")
+
+
+write_csv(x = pg, path = "data/processed/pg.csv")
+
+write_csv(x = sg, path = "data/processed/sg.csv")
+
+write_csv(x = sf, path = "data/processed/sf.csv")
+
+write_csv(x = pf, path = "data/processed/pf.csv")
+
+write_csv(x = centres, path = "data/processed/centres.csv")
+# Writing and saving the new processed data frames for the position specific data
+
+
 

@@ -10,14 +10,7 @@ Bulls averaged 104.94 points per game last season with the league average being 
 
   
 
-
-CREATE FINAL GRAPHS with labels and accurate headings
-
 Write up report explaining the final findings
-
-Organise code for each step in particular file
-
-Upload to github 
 
 
   

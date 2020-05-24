@@ -1,0 +1,1045 @@
+---
+title: "NBA Reproductive Analysis Project"
+title2: "***Chicago Bulls 2020 Starting Five***" 
+
+author: "Josh Drummond"
+date: May 24, 2020
+output:
+  html_document:
+    theme: darkly
+    highlight: tango
+---
+<center>
+
+![**Champions: 1991, 1992, 1993, 1996, 1997, 1998 <br> Conference Titles: 1991, 1992, 1993, 1996, 1997, 1998 <br> Division Titles: 1975, 1991, 1992, 1993, 1996, 1997, 1998, 2011, 2012**](docs/chicago-bulls_logo.png)  
+
+</center> 
+
+
+<style type="text/css">
+
+h1.title {
+  font-size: 38px;
+  color: Red;
+  text-align: center;
+}
+h2.subtitle {
+  font-size: 30px;
+  color: Red;
+  text-align: center;
+}
+h4.author { /* Header 4 - and the author and data headers use this too  */
+    font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: Red;
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: Red;
+  text-align: center;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, include = FALSE, warning = FALSE} 
+# include all required packages at the start
+library(tidyverse) 
+library(prettydoc)
+library(broom)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(magrittr)
+library(naniar)
+library(stringi)
+library(tidyr)
+library(tinytex)
+library(DT)
+```
+
+```{r read, include = FALSE, warning = FALSE}
+p_stats <- read_csv("data/raw/2018-19_nba_player_statistics.csv")
+p_sal <- read_csv("data/raw/2018-19_nba_player-salaries.csv")
+team_stats <- read_csv("data/raw/2018-19_nba_team_statistics_1.csv")
+team_stats_2 <- read_csv("data/raw/2018-19_nba_team_statistics_2.csv")
+payroll <- read_csv("data/raw/2019-20_nba_team-payroll.csv")
+```
+
+```{r rename, include = FALSE, warning = FALSE} 
+#Rename the variables to remove % and variables starting with numbers
+p_stats <- rename(p_stats,
+                  FGp = 'FG%', x3P = '3P', x3PA = '3PA', x3Pp = '3P%', x2P = '2P', x2PA = '2PA', x2Pp = '2P%', eFGp = 'eFG%', FTp = 'FT%') 
+team_stats <- rename(team_stats,
+                     x3PAr = '3PAr', TSp = 'TS%', eFGp = 'eFG%', TOVp = 'TOV%', ORBp = 'ORB%', DRBp = 'DRB%')
+team_stats_2 <- rename(team_stats_2,
+                       FGp = 'FG%', x3P = '3P', x3PA = '3PA', x3Pp = '3P%', x2P = '2P', x2PA = '2PA', x2Pp = '2P%', FTp = 'FT%')
+```
+
+```{r na-replace-remove, include = FALSE, warning = FALSE}
+#Replace the NAs found in shooting percentage of players who didn't attempt a particular shot
+p_stats <- p_stats %>%
+  mutate_if(is.numeric, funs(ifelse(is.na(.), 0, .)))
+#Remove the NA columns added at the end of the Salary and Team Stats variables
+
+p_sal <- p_sal[,-(4:7), drop = FALSE] # Removed columns 4 through to 7 that displayed no data
+team_stats <- team_stats[, -(23:25), drop = FALSE] # Removed columns 23 through to 25 that displayed no data
+```
+
+```{r salary-player-join, include = FALSE, warning = FALSE}
+p_sal <- subset(p_sal, select = c(2:3)) # First remove player id as not required data
+
+p_stats <- left_join(x = p_stats, y = p_sal) # This will join the salary to the respective Player
+
+p_stats <- drop_na(p_stats) # We can see that some Player salaries are missing, so we must remove these from our dataset to ensure we are 100% confident that our picks will keep us under the salary cap. 
+
+which(is.na(p_stats), arr.ind = TRUE) # Quick test to identify if any NAs remain in the dataset
+```
+
+```{r removing-accents, include = FALSE, warning = FALSE}
+x <- stringi::stri_trans_general(p_stats$player_name, "Latin-ASCII")
+ # Saves the player name list in new variable. Removes the accents and saves as a character vector
+
+x_new <- as.data.frame(x, row.names = NULL, optional = FALSE, stringsAsFactors = FALSE) # Converts the vector into a single column data frame
+
+x_new <- stringr::str_replace_all(x_new$x, pattern = "\\.", replacement = "")
+# Removes the periodsin players names.
+
+x_new <- as.data.frame(x, row.names = NULL, optional = FALSE, stringsAsFactors = FALSE) # Converts the vector into a single column data frame
+
+x_new <- rename(x_new, player_name = 'x') # Changes column name to merge data frames
+```
+
+```{r combining-df, include = FALSE, warning = FALSE}
+p_stats <- bind_cols(x = x_new, y = p_stats) # Combines the no accent name variable to the main data frame. 
+
+p_stats <- subset(p_stats, select = -c(player_name1)) # Removes the player name variable that had the accents.
+
+p_stats <- p_stats[, c(1,2,3,4,30,5:29)] # Move the salary variable into a more logical position in the table
+
+p_stats <- rename(p_stats, Salary = 'salary') # Rename salary to Salary, to tidy up the appearance slightly.
+```
+
+```{r combine-teams, include = FALSE, warning = FALSE}
+comb_team <- merge(team_stats, team_stats_2, by.x = "Team", by.y = "Team") # Combine the two sheets, matching by the Team names as the order of the two sheets is different.
+
+comb_team <- subset(comb_team, select = -c(2, 23)) # This will remove the 'Ranking' columns that appeared twice. They aren't necessary in this analysis, so have been removed.
+
+comb_team <- comb_team[, c(1, 2, 22:23, 3:21, 24:44)] # The next three pieces of code, will reorganise the data into an order that is preferable for me. 
+
+comb_team <- comb_team[, c(1:15, 36:44, 16:35)]
+
+comb_team <- comb_team[, c(1:24, 33:44, 25:32)]
+```
+
+```{r player_removal, include = FALSE, warning = FALSE}
+p_stats <- p_stats %>%
+  group_by(player_name) %>%
+  arrange(player_name, desc(G)) %>%
+  distinct(player_name, .keep_all = TRUE) # Will remove any duplicate players based on the amount of games played in that row. The highest amount of games played for the duplicated remains. Team variable 'TOT' stands for Two or More Teams so that is the row we want to keep.
+
+p_stats <- p_stats %>%
+  filter(G >= 20, MP >= 100) # Filter out and remove players that haven't played enough and who's data could influence decisions unnecessarily. 
+```
+
+```{r new-variables, include = FALSE, warning = FALSE}
+p_stats <- p_stats %>%
+  group_by(Pos) %>%
+  mutate(PTSpm = PTS / MP,
+         FTpm = FT / MP,
+         BLKpm = BLK / MP,
+         ASTpm = AST / MP,
+         STLpm = STL / MP,
+         TOVpm = TOV / MP,
+         x3Ppm = x3P / MP,
+         PPG = PTS / G,
+         APG = AST / G,
+         RPG = TRB / G) # Creates new variables at the end of our data frame
+
+p_stats <- arrange(p_stats, Pos) # Arranges the data frame in order of Position
+
+p_stats <- p_stats %>%
+  mutate_if(is.numeric, round, digits = 3)
+
+datatable(p_stats, rownames = FALSE, filter="top", options = list(pageLength = 10, scrollX=T))
+# Formatting the table with a scroll box so that it doesn't take up a considerable amount of the page. I have used the datatable function to include a search bar which will be helpful. 
+
+write_csv(x = p_stats, path = "data/processed/p_stats.csv")
+write_csv(x = comb_team, path = "data/processed/p_stats.csv") # Writing and saving the combined and new processed/tidy data. 
+```
+
+```{r ofrating-wins, include = FALSE, warning = FALSE}
+of_wins <- comb_team %>%
+  ggplot(aes(ORtg, W)) +
+  geom_point() +
+  geom_smooth(method = "lm", colour = "magenta") # Testing for a linear relationship between Team Offensive Ratings and Wins.
+
+of_wins # Prints the above graph
+
+cor(x = comb_team$ORtg, y = comb_team$W, method = "pearson") # Checks the correlation between the two variables
+
+of_wins_lm <- lm(W ~ ORtg, data = comb_team)
+summary(of_wins_lm) # Creates a linear regression model for Offensive Rating v Wins.
+
+predict(of_wins_lm) # Obtain the predicted/expected values.
+
+of_wins_stdres <- rstandard(of_wins_lm) # Calculating the standardised residuals, which is the residual divided by their standard deviation
+of_wins_points <- 1:length(of_wins_stdres) # Gives the length of the variable
+of_wins_labels <- if_else(abs(of_wins_stdres) >= 1.5, paste(of_wins_points), "")  # Will label the point on the graph if the residual is greater than 1.5 standard deviations.
+
+ggplot(data = NULL, aes(x = of_wins_points, y = of_wins_stdres)) +
+  geom_point() +
+  geom_text(aes(label = of_wins_labels), nudge_y = 0.3) +
+  ylim(c(-4, 4)) +
+  geom_hline(yintercept = c(-3, 3), colour = "red", linetype = "dashed") # Create a graph with a straight line on the y-axis to show the limits where outliers are classified. 
+
+of_wins_hats <- hatvalues(of_wins_lm) # Measures the leverage of the points. 
+
+ggplot(data = NULL, aes(x = of_wins_points, y = of_wins_hats)) +
+  geom_point() # Shows the leverage on a graph
+
+of_wins_cook <- cooks.distance(of_wins_lm) # Collective change in the coefficients when the ith point is deleted
+
+ggplot(data = NULL, aes(x = of_wins_points, y = of_wins_cook))+
+  geom_point()# shows the collective change through a scatterplot graph. 
+
+car::durbinWatsonTest(of_wins_lm) # We begin to deal with the potential outliers by observing them. The Durbin Watson Test will determine if we have independence of observations. 
+
+of_wins_res <- residuals(of_wins_lm)
+of_wins_fitted <- predict(of_wins_lm)# Testing for homoscedasticity, and whether they have a constant variance across all x values. 
+
+ggplot(data = NULL, aes(x = of_wins_fitted, y = of_wins_res)) +
+  geom_point(colour = "dodgerblue") +
+  geom_hline(yintercept = 0, colour = "red", linetype = "dashed") # Graphs the results of homoscedasticity
+
+ggplot(data = NULL, aes(sample = of_wins_res)) +
+  stat_qq() + stat_qq_line() # Normality of the residuals
+```
+
+```{r defrating-wins, include = FALSE, warning = FALSE}
+def_wins <- comb_team %>%
+  ggplot(aes(DRtg, W)) +
+  geom_point() +
+  geom_smooth(method = "lm", colour = "magenta") # Testing for a linear relationship between Defensive Rating and Wins. Important to note that the negative linear relationship is actually reversed, as a higher defensive rating is not a good outcome for the team. A higher win rate and lower defensive rating is the ideal outcome.
+
+def_wins # Prints the above graph
+
+cor(x = comb_team$DRtg, y = comb_team$W, method = "pearson") # Checks the correlation
+
+def_wins_lm <- lm(W ~ DRtg, data = comb_team)
+summary(def_wins_lm) # Creates a linear regression model for Defensive Rating v Wins
+
+predict(def_wins_lm) # Obtain the predicted/expected values
+
+def_wins_stdres <- rstandard(def_wins_lm) # Calculating the standardised residuals, which is the residual divided by their standard deviation
+def_wins_points <- 1:length(def_wins_stdres) # Gives the length of the variable
+def_wins_labels <- if_else(abs(def_wins_stdres) >= 1.5, paste(def_wins_points), "") # Will label the point on the graph if the residual is greater than 1.5 standard deviations.
+
+ggplot(data = NULL, aes(x = def_wins_points, y = def_wins_stdres)) +
+  geom_point() +
+  geom_text(aes(label = def_wins_labels), nudge_y = 0.3) +
+  ylim(c(-4, 4)) +
+  geom_hline(yintercept = c(-3, 3), colour = "red", linetype = "dashed") # Create a graph with a straight line on the y-axis to show the limits where outliers are classified. 
+
+def_wins_hats <- hatvalues(def_wins_lm) # Measures the leverage of the points
+
+ggplot(data = NULL, aes(x = def_wins_points, y = def_wins_hats)) +
+  geom_point() # Shows the leverage on a graph
+
+def_wins_cook <- cooks.distance(def_wins_lm) # Collective change in the coefficients when the ith point is deleted
+
+ggplot(data = NULL, aes(x = def_wins_points, y = def_wins_cook))+
+  geom_point() # Shows the collective change through a scatterplot graph.
+
+car::durbinWatsonTest(def_wins_lm) # We begin to deal with the potential outliers by observing them. The Durbin Watson Test will determine if we have independence of observations. 
+
+def_wins_res <- residuals(def_wins_lm)
+def_wins_fitted <- predict(def_wins_lm) # Testing for homoscedasticity, and whether they have a constant variance across all x values. 
+
+ggplot(data = NULL, aes(x = def_wins_fitted, y = def_wins_res)) +
+  geom_point(colour = "dodgerblue") +
+  geom_hline(yintercept = 0, colour = "red", linetype = "dashed") # Graphs the results of homoscedasticity
+
+ggplot(data = NULL, aes(sample = def_wins_res)) +
+  stat_qq() + stat_qq_line() # Normality of the residuals.
+```
+
+```{r netrg_win, include = FALSE, warning = FALSE}
+net_win <- comb_team %>%
+  ggplot(aes(NRtg, W)) +
+  geom_point() +
+  geom_smooth(method = "lm", colour = "magenta") # Testing for a linear relationship between Team Net Rating and Wins
+
+net_win # Prints the above graph
+
+cor(x = comb_team$NRtg, y = comb_team$W, method = "pearson") # checks the correlation
+
+net_wins_lm <- lm(W ~ NRtg, data = comb_team)
+summary(net_wins_lm) # Creates a linear regression model.
+
+predict(net_wins_lm) # Obtain the predicted/expected values
+
+net_wins_stdres <- rstandard(net_wins_lm) # Calculating the standardised residuals, which is the residual divided by their standard deviation
+net_wins_points <- 1:length(net_wins_stdres) # Gives the length of the variable
+net_wins_labels <- if_else(abs(net_wins_stdres) >= 1.5, paste(net_wins_points), "") # Will label the point on the graph if the residual is greater than 1.5 standard deviations.
+
+ggplot(data = NULL, aes(x = net_wins_points, y = net_wins_stdres)) +
+  geom_point() +
+  geom_text(aes(label = net_wins_labels), nudge_y = 0.3) +
+  ylim(c(-4, 4)) +
+  geom_hline(yintercept = c(-3, 3), colour = "red", linetype = "dashed") # Create a graph with a straight line on the y-axis to show the limits where outliers are classified.
+
+net_wins_hats <- hatvalues(net_wins_lm) # Measures the leverage of the points
+
+ggplot(data = NULL, aes(x = net_wins_points, y = net_wins_hats)) +
+  geom_point() # Shows the leverage
+
+net_wins_cook <- cooks.distance(net_wins_lm) # Collective change in the coefficients when the ith point is deleted
+
+ggplot(data = NULL, aes(x = net_wins_points, y = net_wins_cook))+
+  geom_point() # Shows the collective change through a scatterplot graph.
+
+car::durbinWatsonTest(net_wins_lm) # We begin to deal with the potential outliers by observing them. The Durbin Watson Test will determine if we have independence of observations. 
+
+net_wins_res <- residuals(net_wins_lm)
+net_wins_fitted <- predict(net_wins_lm) # Testing for homoscedasticity, and whether they have a constant variance across all x values.
+
+ggplot(data = NULL, aes(x = net_wins_fitted, y = net_wins_res)) +
+  geom_point(colour = "dodgerblue") +
+  geom_hline(yintercept = 0, colour = "red", linetype = "dashed") # Graphs the results of homoscedasticity
+
+ggplot(data = NULL, aes(sample = net_wins_res)) +
+  stat_qq() + stat_qq_line() # Normality of the residuals. 
+
+```
+
+<center>
+
+
+# What Drives A Team's Success On The Court?
+
+Our ability to score points in basketball is the single most defining factor in winning and losing. 
+It may sound simple, but score more points than the opposition, you win. Success in basketball is driven purely through our Win/Loss record. 
+
+```{r creating_final_graphs2, echo = FALSE, message = FALSE, warning = FALSE}
+# Offence Rating v Wins
+
+final_of_wins <- comb_team %>%
+  ggplot(aes(ORtg, W)) +
+  geom_point() +
+  geom_smooth(method = "lm", colour = "blue") +
+  labs(title = "Offensive Rating relative to Wins",
+       subtitle = "A Linear Relationship Explored",
+       caption = "Plotting Team Offensive Ratings and their correlating Wins",
+       x = "Team Offensive Ratings",
+       y = "Season Wins") # Changing and configuring the Titles of the graph. 
+  
+final_of_wins
+```
+
+
+```{r creating_final_graphs1, echo = FALSE, message = FALSE, warning = FALSE}
+final_def_wins <- comb_team %>%
+  ggplot(aes(DRtg, W)) +
+  geom_point() +
+  geom_smooth(method = "lm", colour = "orange") +
+  labs(title = "Defensive Rating relative to Wins",
+       subtitle = "A Linear Relationship",
+       caption = "Plotting Team Defensive Ratings and their correlating Wins",
+       x = "Team Defensive Ratings",
+       y = "Season Wins") # Changing and configuring the Titles of the graph. 
+   # Testing for a linear relationship between Defensive Rating and Wins. Important to note that the negative linear relationship is actually reversed, as a higher defensive rating is not a good outcome for the team. A higher win rate and lower defensive rating is the ideal outcome.
+
+final_def_wins  
+```
+
+If we look at the two graphs above, you’ll see that we can clearly see a relationship between the desired ratings. (Higher for offensive, and lower for defensive). 
+Our rating in offence/defence was 104.8/113.2 respectively. 
+
+Last season we finished with a losing record of 22 wins and 60 losses, the 27th best record in the league and the second worst offensively rated side. 
+The most successful teams in 2018-19 all had stellar offensive ratings. Defensive rating, while not as important as its offensive counterpart, can also provide a strong indication of a team’s W-L record.
+
+According to those figures, offensively we won as many games as we were expected, but underperformed comparing to our expected win rate based solely on defence. 
+It’s easy to think, that because we won less than expected, the way to move forward and win, is to score and improve our offensive side. Scoring more points, takes the pressure off the defence and reduces our Net Rating closer to 0. 
+
+
+```{r pts-offencertg, echo = FALSE, message = FALSE, warning = FALSE}
+pts_off <- comb_team %>%
+  ggplot(aes(PTS, W)) +
+  geom_point() +
+  geom_smooth(method = "lm", colour = "magenta") # Testing for a linear relationship between Points and Wins
+```
+
+```{r pts-offencertg-remaining, include = FALSE, message = FALSE, warning = FALSE}
+pts_off # Prints the above graph
+
+cor(x = comb_team$PTS, y = comb_team$W, method = "pearson") # checks the correlation
+
+pts_wins_lm <- lm(W ~ PTS, data = comb_team)
+summary(pts_wins_lm) # Creates a linear regression model.
+
+predict(pts_wins_lm) # Obtain the predicted/expected values
+
+pts_wins_stdres <- rstandard(pts_wins_lm) # Calculating the standardised residuals, which is the residual divided by their standard deviation
+pts_wins_points <- 1:length(pts_wins_stdres) # Gives the length of the variable
+pts_wins_labels <- if_else(abs(pts_wins_stdres) >= 1.5, paste(pts_wins_points), "") # Will label the point on the graph if the residual is greater than 1.5 standard deviations.
+
+ggplot(data = NULL, aes(x = pts_wins_points, y = pts_wins_stdres)) +
+  geom_point() +
+  geom_text(aes(label = pts_wins_labels), nudge_y = 0.3) +
+  ylim(c(-4, 4)) +
+  geom_hline(yintercept = c(-3, 3), colour = "red", linetype = "dashed") # Create a graph with a straight line on the y-axis to show the limits where outliers are classified.
+
+pts_wins_hats <- hatvalues(pts_wins_lm) # Measures the leverage of the points
+
+ggplot(data = NULL, aes(x = pts_wins_points, y = net_wins_hats)) +
+  geom_point() # Shows the leverage
+
+pts_wins_cook <- cooks.distance(pts_wins_lm) # Collective change in the coefficients when the ith point is deleted
+
+ggplot(data = NULL, aes(x = pts_wins_points, y = pts_wins_cook))+
+  geom_point() # Shows the collective change through a scatterplot graph.
+
+car::durbinWatsonTest(pts_wins_lm) # We begin to deal with the potential outliers by observing them. The Durbin Watson Test will determine if we have independence of observations. 
+
+pts_wins_res <- residuals(pts_wins_lm)
+pts_wins_fitted <- predict(pts_wins_lm) # Testing for homoscedasticity, and whether they have a constant variance across all x values.
+
+ggplot(data = NULL, aes(x = pts_wins_fitted, y = pts_wins_res)) +
+  geom_point(colour = "dodgerblue") +
+  geom_hline(yintercept = 0, colour = "red", linetype = "dashed") # Graphs the results of homoscedasticity
+
+ggplot(data = NULL, aes(sample = pts_wins_res)) +
+  stat_qq() + stat_qq_line() # Normality of the residuals. 
+```
+
+```{r z-scores, include = FALSE, message = FALSE, warning = FALSE}
+comb_team %>%
+  mutate(z_pts = round((PTS - mean(PTS)) / sd(PTS)),
+         pts_per_game = PTS / G,
+         z_x3p = round((x3P - mean(x3P)) / sd(x3P))) %>%
+  ggplot() +
+  stat_qq(aes(sample = pts_per_game)) +
+  facet_wrap(~ z_x3p) # The Z-Score is used to standardise and compare individual performances to the mean performances across a group. It allows us to adjust performances based on a given mean and standard deviation. 
+# Plotting the z-score on a graph (stat_qq) tests of the normality to ensure there is no evidence of heteroscedasticity. 
+  
+comb_team %>%
+  mutate(z_pts = round((PTS - mean(PTS)) / sd(PTS)),
+         pts_per_game = PTS / G) %>%
+  ggplot() +
+  stat_qq(aes(sample = pts_per_game)) +
+  facet_wrap(~ z_pts)  # The Z-Score is used to standardise and compare individual performances to the mean performances across a group. It allows us to adjust performances based on a given mean and standard deviation. 
+# Plotting the z-score on a graph (stat_qq) tests of the normality to ensure there is no evidence of heteroscedasticity. 
+```
+
+```{r position-specific, include = FALSE, warning = FALSE}
+centres <- subset(p_stats, Pos == "C") # Creates a data frame specific for Centres
+
+sg <- subset(p_stats, Pos == "SG") # Creates a data frame specific for Shooting Guards
+
+sf <- subset(p_stats, Pos == "SF") # Creates a data frame specific for Small Forwards
+
+pf <- subset(p_stats, Pos == "PF") # Creates a data frame specific for Power Forwards
+
+pg <- subset(p_stats, Pos == "PG") # Creates a data frame specific for Point Guards
+
+write_csv(x = pg, path = "data/processed/pg.csv") # Saves the new PG data into a new computer file.
+
+write_csv(x = sg, path = "data/processed/sg.csv") # Saves the new SG data into a new computer file.
+
+write_csv(x = sf, path = "data/processed/sf.csv") # Saves the new SF data into a new computer file.
+
+write_csv(x = pf, path = "data/processed/pf.csv") # Saves the new PF data into a new computer file.
+
+write_csv(x = centres, path = "data/processed/centres.csv") # Saves the new C data into a new computer file.
+
+```
+
+```{r lm-ovr, include = FALSE, warning = FALSE}
+overall_tidy_combined <- lm(PTSpm ~ MP + x3P + x2P + FT, data = p_stats)
+
+tidy(overall_tidy_combined, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points per minute.
+
+overall_tidy_ppg <- lm(PPG ~ G + x3P + x2P + FT, data = p_stats)
+
+tidy(overall_tidy_ppg, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points.
+
+overall_tidy_pts <- lm(PTS ~ AST + DRB + ORB + BLK + TOV, data = p_stats)
+
+tidy(overall_tidy_pts, conf.int = TRUE)
+```
+
+```{r lm-pg, include = FALSE, warning = FALSE}
+pg_overall_tidy <- lm(PTSpm ~ MP + x3P + x2P + FT, data = pg)
+
+tidy(pg_overall_tidy, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points per minute, specific to Point Guards. 
+
+pg_overall_tidy_ppg <- lm(PPG ~ G + x3P + x2P + FT, data = pg)
+
+tidy(pg_overall_tidy_ppg, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points, specific to Point Guards
+
+pg_overall_tidy_pts <- lm(PTS ~ AST + DRB + ORB + BLK + TOV, data = pg)
+
+tidy(pg_overall_tidy_pts, conf.int = TRUE) # Values players based on successful actions and their relative contribution to external actions not involved with points, specific to Point Guards.
+```
+
+```{r lm-sg, include = FALSE, warning = FALSE}
+sg_overall_tidy <- lm(PTSpm ~ MP + x3P + x2P + FT, data = sg)
+
+tidy(sg_overall_tidy, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points per minute, specific to Shooting Guards.
+
+sg_overall_tidy_ppg <- lm(PPG ~ G + x3P + x2P + FT, data = sg)
+
+tidy(sg_overall_tidy_ppg, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points, specific to Shooting Guards.
+
+sg_overall_tidy_pts <- lm(PTS ~ AST + DRB + ORB + BLK + TOV, data = sg)
+
+tidy(sg_overall_tidy_pts, conf.int = TRUE) # Values players based on successful actions and their relative contribution to external actions not involved with points, specific to Shooting Guards.
+```
+
+```{r lm-sf, include = FALSE, warning = FALSE}
+sf_overall_tidy <- lm(PTSpm ~ MP + x3P + x2P + FT, data = sf)
+
+tidy(sf_overall_tidy, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points per minute, specific to Small Forwards.
+
+sf_overall_tidy_ppg <- lm(PPG ~ G + x3P + x2P + FT, data = sf)
+
+tidy(sf_overall_tidy_ppg, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points, specific to Small Forwards
+
+sf_overall_tidy_pts <- lm(PTS ~ AST + DRB + ORB + BLK + TOV, data = sf)
+
+tidy(sf_overall_tidy_pts, conf.int = TRUE) # Values players based on successful actions and their relative contribution to external actions not involved with points, specific to Small Forwards
+```
+
+```{r lm-pf, include = FALSE, warning = FALSE}
+pf_overall_tidy <- lm(PTSpm ~ MP + x3P + x2P + FT, data = pf)
+
+tidy(pf_overall_tidy, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points per minute, specific to Power Forwards.
+
+pf_overall_tidy_ppg <- lm(PPG ~ G + x3P + x2P + FT, data = pf)
+
+tidy(pf_overall_tidy_ppg, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points, specific to Power Forwards. 
+
+pf_overall_tidy_pts <- lm(PTS ~ AST + DRB + ORB + BLK + TOV, data = pf)
+
+tidy(pf_overall_tidy_pts, conf.int = TRUE) # Values players based on successful actions and their relative contribution to external actions not involved with points, specific to Power Fowards
+```
+
+```{r lm-c, include = FALSE, warning = FALSE}
+c_overall_tidy <- lm(PTSpm ~ MP + x3P + x2P + FT, data = centres)
+
+tidy(c_overall_tidy, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points per minute, specific to Centres.
+
+c_overall_tidy_ppg <- lm(PPG ~ G + x3P + x2P + FT, data = centres)
+
+tidy(c_overall_tidy_ppg, conf.int = TRUE) # Values players based on successful actions and their relative contribution to scoring points, specific to Centres.
+
+c_overall_tidy_pts <- lm(PTS ~ AST + DRB + ORB + BLK + TOV, data = centres)
+
+tidy(c_overall_tidy_pts, conf.int = TRUE) # Values players based on successful actions and their relative contribution to external actions not involved with points, specific to Centres
+```
+
+```{r selected-team, include = FALSE, warning = FALSE}
+selected_player_pg <- pg %>%
+  filter(player_name == "D'Angelo Russell") # Filter for the chosen PG
+
+selected_player_pg_2 <- pg %>%
+  filter(player_name == "Kemba Walker") # Filter for the chosen PG
+
+selected_pg <- bind_rows(selected_player_pg, selected_player_pg_2) # Combine the two selected PG players for a comparison to make a final decision. 
+
+selected_player_sg <- sg %>%
+  filter(player_name == "Donovan Mitchell") # Filter for the chosen SG
+
+selected_player_sg_2 <- sg %>%
+  filter(player_name == "Devin Booker") # Filter for the chosen SG
+
+selected_sg <- bind_rows(selected_player_sg, selected_player_sg_2) # Combine the two selected SG players for a comparison to make a final decision. 
+
+selected_player_sf <- sf %>%
+  filter(player_name == "Kevin Durant") # Filter for the chosen SF
+
+selected_player_sf_2 <- sf %>%
+  filter(player_name == "Kawhi Leonard") # Filter for the chosen SF
+
+selected_sf <- bind_rows(selected_player_sf, selected_player_sf_2) # Combine the two selected SF players for a comparison to make a final decision. 
+
+selected_player_pf <- pf %>%
+  filter(player_name == "Giannis Antetokounmpo") # Filter for the chosen PF
+
+selected_player_pf_2 <- pf %>%
+  filter(player_name == "Julius Randle") # Filter for the chosen PF
+
+selected_pf <- bind_rows(selected_player_pf, selected_player_pf_2) # Combine the two selected PF players for a comparison to make a final decision. 
+
+selected_player_c <- centres %>%
+  filter(player_name == "Karl-Anthony Towns") # Filter for the chosen C
+```
+
+# Each Basket Type Relating to Total Player Points
+
+***Points = 3-Point FG + 2-Point FG + Free Throw***
+
+Being able to identify which basket type plays a bigger role in basketball, its clear to see that a 3-Point basket is worth more, because if we relate to our previous comment.
+
+
+<br>
+More Points = More Wins
+</br>
+
+
+In the three graphs below, describe the relationship each type of basket has with the total points that player scored. If a player connects with 200 x 3 point baskets, the linear result is estimated approx 1400 points. When we compare that to a player making 200 x 2 point baskets, the estimated result is approx 750. That’s a large differential in any sense of the word. 82 game season and approx a 650 point difference, which is 8 points per game. 
+
+Considering most games are decided by under 5 points, that is a huge advantage if we can find players successfully making 3 point baskets. 
+The clear observation here is finding efficient ball shooters, regardless if that is from beyond the 3 point arc or inside the paint or having the ability to get to the free throw line. Efficiency is key, as that’ll allow our team to rate higher offensively, which we have seen in previous graphs that a high offensive rating is directly linked to increasing our winning potential. 
+
+
+```{r pos-specific, echo = FALSE, message = FALSE, warning = FALSE}
+final_x3pts_ppg <- ggplot(data = p_stats, aes(x = x3P, y = PTS)) +
+  geom_point(colour = "dodgerblue") +
+  geom_smooth(method = "lm", colour = "magenta") + # 3pt FG makes to total points
+  labs(title = "Successful 3 Point Attempts and Overall Points",
+       subtitle = "Identifying a Relationship between 3 Point Baskets and Total Points",
+       x = "Successful 3 Point Baskets",
+       y = "Total Points") + # Changing and configuring the Titles of the graph. 
+  theme_linedraw()
+  
+final_x3pts_ppg # Prints the graph with a regression line
+```
+
+
+``````{r pos-specific2, echo = FALSE, message = FALSE, warning = FALSE}
+final_x2pts_ppg <- ggplot(data = p_stats, aes(x = x2P, y = PTS)) +
+  geom_point(colour = "dodgerblue") +
+  geom_smooth(method = "lm", colour = "magenta") + # 2pt FG makes to total points
+  labs(title = "Successful 2 Point Attempts and Overall Points",
+     subtitle = "Identifying a Relationship between 2 Point Baskets and Total Points",
+     x = "Successful 2 Point Baskets",
+     y = "Total Points") + # Changing and configuring the Titles of the graph. 
+  theme_linedraw()
+
+final_x2pts_ppg # Prints the graph with a regression line
+```
+
+
+```{r pos-specific3, echo = FALSE, message = FALSE, warning = FALSE}
+final_ftpts_ppg <- ggplot(data = p_stats, aes(x = FT, y = PTS)) +
+  geom_point(colour = "dodgerblue") +
+  geom_smooth(method = "lm", colour = "magenta") + # FT makes to total points
+  labs(title = "Successful Free Throw Point Attempts and Overall Points",
+       subtitle = "Identifying a Relationship between Free Throws and Total Points",
+       x = "Successful Free Throws",
+       y = "Total Points") + # Changing and configuring the Titles of the graph. 
+  theme_linedraw()
+
+final_ftpts_ppg # Prints the graph with a regression line
+```
+
+
+
+# Current Player Performance Breakdown
+
+I have broken down the competition in the next 3 particular graphs to show their Salary for the 2018-2019 season plotted alongside their 2018-2019 Points Per Game Average, their Rebounds Per Game Average and their Assists Per Game Average. . 
+The graph has each position colour coordinated so we can identify particular player position requirements. However, it is important. To quickly breakdown what we want from each position in an easy to understand way. 
+
+**Point Guard** must be able to pass the ball to find open players for assists. As a basic rule, they themselves must have scoring potential. To find an elite ball user is important to create a better team balance. 
+
+**Shooting Guard** can play similar role to our Point Guard, however, he must be a good 3 point shooter. We need to be able to space out the defence to create easier shots outside, and open the lane on the inside. 
+
+**Small Forward** will be our versatile player, who can do everything and do it well. It will become obvious why this is important, but the Franchise Player of the *Chicago Bulls* will be a Small Forward. 
+
+**Power Forward** I believe is key needs to be able to score inside, and be able to bring down the rebounds defensively and offensively, and what is now becoming the trend in the NBA, our Power Forward will need to be able to put up and make 3 point baskets if required. 
+
+**Centre** dominate inside, our main defensive post and our rebounding power. Must block shots and get rebounds, otherwise, we’ll find a reliable smaller player and play small ball.
+
+As you’ll see in the graphs, the dotted lines along the X-axis and Y-axis create 4 quadrants that divide the competition. 
+
+1. **Performing above the average and paid under our affordability range.**
+
+2. **Performing above the average and paid over our affordability range.**
+
+3. **Performing under the average and paid under our affordability range.**
+
+4. **Performing under the average and paid over our affordability range.**
+
+In wanting to find the best available player and be able to afford these 5 starting players, without blowing our budget, we’ll be focusing our attention to the first quandant **performing above the average and paid under our affordability range.**
+
+```{r comboppg, echo = FALSE, message = FALSE, warning = FALSE}
+# Points Per Game Value
+
+combined_ppgsalary_value <- p_stats %>%
+  ggplot(aes(Salary, PPG, colour = Pos, label = player_name)) +
+  geom_point() +
+  geom_text(nudge_y = 1, cex = 2) +
+  geom_hline(yintercept = 20, colour = "navy", linetype = "dotted") +
+  geom_vline(xintercept = 15000000, colour = "navy", linetype = "dotted") +
+  scale_y_continuous(limits = c(10,35)) +
+    labs(title = "Current Points Per Game",
+       subtitle = "Finding Value in the NBA",
+       caption = "Finding a cheaper alternative with similar predicted output",
+       x = "Player Salary",
+       y = "Points Per Game",
+       colour = "Player Position") + # Changing and configuring the Titles of the graph. 
+  theme_bw() # Change the theme of the graph
+
+combined_ppgsalary_value
+```
+
+
+```{r comborb, echo = FALSE, message = FALSE, warning = FALSE}
+# Rebounds Per Game Value
+
+combined_rpgsalary_value <- p_stats %>%
+  ggplot(aes(Salary, RPG, colour = Pos, label = player_name)) +
+  geom_point() +
+  geom_text(nudge_y = .5, cex = 2) +
+  geom_hline(yintercept = 7, colour = "navy", linetype = "dotted") +
+  geom_vline(xintercept = 15000000, colour = "navy", linetype = "dotted") +
+  scale_y_continuous(limits = c(5,17)) +
+    labs(title = "Current Total Rebounds Per Game",
+       subtitle = "Finding Value in the NBA",
+       caption = "Finding a cheaper alternative with similar predicted output",
+       x = "Player Salary",
+       y = "Rebounds Per Game",
+       colour = "Player Position") + # Changing and configuring the Titles of the graph. 
+  theme_bw() # Change the theme of the graph
+
+combined_rpgsalary_value
+```
+
+
+```{r comboas, echo = FALSE, message = FALSE, warning = FALSE}
+# Assists Per Game Value
+
+combined_astsalary_value <- p_stats %>%
+  ggplot(aes(Salary, APG, colour = Pos, label = player_name)) +
+  geom_point() +
+  geom_text(nudge_y = .5, cex = 2) +
+  geom_hline(yintercept = 7, colour = "navy", linetype = "dotted") +
+  geom_vline(xintercept = 15000000, colour = "navy", linetype = "dotted") +
+  scale_y_continuous(limits = c(4,12)) +
+    labs(title = "Current Assists Per Game",
+       subtitle = "Finding Value in the NBA",
+       caption = "Finding a cheaper alternative with similar predicted output",
+       x = "Player Salary",
+       y = "Assists Per Game",
+       colour = "Player Position") + # Changing and configuring the Titles of the graph.
+  theme_bw() # Change the theme of the graph
+
+combined_astsalary_value
+```
+
+# Player Points Predictions by Position
+
+Let’s break it down, position by position to allow us to see our positional scoring leaders and the predicted points each player will score next season. When we add in the salaries to the equation again, you’ll be able to identify clearly who the players we are going to be targeting are. 
+
+
+
+### Point Guard
+
+Clearly James Harden is the leader in not only the Point Guard Position, but as a star of the competition, however, this analysis allows us to identify players like Kemba Walker, D’Angelo Russell, Trae Young who can have big impacts at a fraction of James Harden’s cost. 
+
+```{r pts_predict_pg, echo = FALSE, message = FALSE, warning = FALSE}
+final_pg_ppg_pts_predict <- pg %>%
+  filter(PPG >= 10) %>% # This will filter out Point Guards who score under 10 Points Per Game
+  mutate(pg_r_hat = predict(pg_overall_tidy_ppg, newdata = .)) %>%
+  ggplot(aes(pg_r_hat, PTS, label = player_name)) +
+  geom_point(colour = "Red", alpha = 0.8) +
+  geom_text(nudge_x = 2, cex = 2) +
+  geom_smooth() + # This formula will predict each Point Guards predicted Points Per Game against their actual output 
+  labs(title = "Predicted Points in comparison to Actual Points Output",
+       subtitle = "Identifying Point Guards who perform to expected levels",
+       x = "Predicted Points Per Game Average",
+       y = "Total Points") + # Changing and configuring the Titles of the graph. 
+  theme_linedraw() # Changing the theme of the graph.
+
+final_pg_ppg_pts_predict # Prints the output
+```
+
+### Shooting Guard
+
+Bradley Beal had a breakout season last year and is now the premier Shooting Guard, but he comes at a cost. Young players who have stepped into the game and dominated consistently across 2-4 seasons do not command the same price tag as Bradley, their output may not be on the same level, but the cost margin to predicted output is beneficial to us rebuilding our starting 5. 
+
+```{r pts_predict_sg, echo = FALSE, message = FALSE, warning = FALSE}
+final_sg_ppg_pts_predict <- sg %>%
+  filter(PPG >= 10) %>% # This will filter out Shooting Guards who score under 10 Points Per Game
+  mutate(sg_r_hat = predict(sg_overall_tidy_ppg, newdata = .)) %>%
+  ggplot(aes(sg_r_hat, PTS, label = player_name)) +
+  geom_point(colour = "Red", alpha = 0.8) +
+  geom_text(nudge_x = 2, cex = 2) +
+  geom_smooth() + # This formula will predict each Shooting Guards predicted Points Per Game against their actual output
+  labs(title = "Predicted Points in comparison to Actual Points Output",
+       subtitle = "Identifying Shooting Guards who perform to expected levels",
+       x = "Predicted Points Per Game Average",
+       y = "Total Points") + # Changing and configuring the Titles of the graph
+  theme_linedraw() # Changing the theme of the graph.
+
+final_sg_ppg_pts_predict # Prints the output
+```
+
+### Small Forward
+
+The position most desirable by all teams. There aren’t enough Kevin Durant and Lebron James running around in the league, and is evident by this breakdown, the cheaper players are indeed a long way off the level of these league leaders. By playing the moneybag game across 3-4 starting positions, it allows us the opportunity to sign a Franchise Player, something that must be considered to improve our offensive rating.
+
+```{r pts_predict_sf, echo = FALSE, message = FALSE, warning = FALSE}
+final_sf_ppg_pts_predict <- sf %>%
+  filter(PPG >= 10) %>% # This will filter out Small Forwards who score under 10 Points Per Game
+  mutate(sf_r_hat = predict(sf_overall_tidy_ppg, newdata = .)) %>%
+  ggplot(aes(sf_r_hat, PTS, label = player_name)) +
+  geom_point(colour = "Red", alpha = 0.8) +
+  geom_text(nudge_x = 2, cex = 2) +
+  geom_smooth() + # This formula will predict each Small Forwards predicted Points Per Game against their actual output
+  labs(title = "Predicted Points in comparison to Actual Points Output",
+       subtitle = "Identifying Small Forwards who perform to expected levels",
+       x = "Predicted Points Per Game Average",
+       y = "Total Points") + # Changing and configuring the Titles of the graph
+  theme_linedraw() # Changing the theme of the graph.
+
+final_sf_ppg_pts_predict # Prints the output
+```
+
+### Power Forward
+
+A group of 4 have identified their position as premier big men in the competition and from there we’ll be able to target the cheaper alternative than the clear choice of Giannis Antentokounmpo. 
+
+```{r pts_predict_pf, echo = FALSE, message = FALSE, warning = FALSE}
+final_pf_ppg_pts_predict <- pf %>%
+  filter(PPG >= 10) %>% # This will filter out Centres who score under 10 Points Per Game
+  mutate(pf_r_hat = predict(pf_overall_tidy_ppg, newdata = .)) %>%
+  ggplot(aes(pf_r_hat, PTS, label = player_name)) +
+  geom_point(colour = "Red", alpha = 0.8) +
+  geom_text(nudge_x = 2, cex = 2) +
+  geom_smooth() + # This formula will predict each Centres predicted Points Per Game against their actual output 
+  labs(title = "Predicted Points in comparison to Actual Points Output",
+       subtitle = "Identifying Power Forwards who perform to expected levels",
+       x = "Predicted Points Per Game Average",
+       y = "Total Points") + # Changing and configuring the Titles of the graph 
+  theme_linedraw() # Changing the theme of the graph.
+
+final_pf_ppg_pts_predict # Prints the output
+```
+
+### Centres
+
+Much like the results from the Power Forward section, the Centres have a clear group standing out above the rest, and what is interesting is that they are generally not paid highly compared to the other positions as a very generalised rule. This can be where we can make a huge step forward by taking a cheap centre who’s output goes way beyond their worth. 
+
+```{r pts_predict_c, echo = FALSE, message = FALSE, warning = FALSE}
+final_c_ppg_pts_predict <- centres %>%
+  filter(PPG >= 10) %>% # This will filter out Centres who score under 10 Points Per Game
+  mutate(c_r_hat = predict(c_overall_tidy_ppg, newdata = .)) %>%
+  ggplot(aes(c_r_hat, PTS, label = player_name)) +
+  geom_point(colour = "Red", alpha = 0.8) +
+  geom_text(nudge_x = 2, cex = 2) +
+  geom_smooth() + # This formula will predict each Centres predicted Points Per Game against their actual output 
+  labs(title = "Predicted Points in comparison to Actual Points Output",
+       subtitle = "Identifying Centres who perform to expected levels",
+       x = "Predicted Points Per Game Average",
+       y = "Total Points") + # Changing and configuring the Titles of the graph 
+  theme_linedraw() # Changing the theme of the graph.
+
+final_c_ppg_pts_predict # Prints the output # Prints the output
+```
+
+# Competition's Elite Performers Broken Down By Predicted Points And Their Salary
+
+### Point Guard
+
+```{r creating_final_graphs6, echo = FALSE, message = FALSE, warning = FALSE}
+## Point Guard
+pg_pts_hat <- pg %>%
+  mutate(pg_hat = predict(pg_overall_tidy_ppg, newdata = .))
+
+final_pg_salary <- pg_pts_hat %>%
+  ggplot(aes(Salary, pg_hat, colour = Pos, label = player_name)) +
+  geom_point(colour = "black") +
+  geom_text(nudge_y = 1, cex = 2) + # Gives the predicted points average against the players salary, to see where the value is. We select D'Angelo Russell at Point Guard. 
+  geom_hline(yintercept = 20, colour = "navy", linetype = "dotted") +
+  geom_vline(xintercept = 15000000, colour = "navy", linetype = "dotted") + # Divides the graph into sections to indicate where players may be overpriced for their output
+  labs(title = "Predicted Points and Current Salary for Point Guards",
+       subtitle = "Finding Value in the Point Guard Position",
+       caption = "Finding a cheaper alternative with similar predicted output",
+       x = "Player Salary",
+       y = "Predicted Points Per Game",
+       colour = "Player Position")
+
+final_pg_salary
+```
+
+### Shooting Guard
+
+```{r creating_final_graphs5, echo = FALSE, message = FALSE, warning = FALSE}
+## Shooting Guard
+sg_pts_hat <- sg %>%
+  mutate(sg_hat = predict(sg_overall_tidy_ppg, newdata = .))
+
+final_sg_salary <- sg_pts_hat %>%
+  ggplot(aes(Salary, sg_hat, colour = Pos, label = player_name)) +
+  geom_point(colour = "black") +
+  geom_text(nudge_y = 1.5, cex = 2) + # Gives the predicted points average against the players salary, to see where the value is. We select Donovan Mitchell at Shooting Guard. 
+  geom_hline(yintercept = 20, colour = "cyan", linetype = "dotted") +
+  geom_vline(xintercept = 15000000, colour = "cyan", linetype = "dotted") + # Divides the graph into sections to indicate where players may be overpriced for their output
+  labs(title = "Predicted Points and Current Salary for Shooting Guards",
+       subtitle = "Finding Value in the Shooting Guard Position",
+       caption = "Finding a cheaper alternative with similar predicted output",
+       x = "Player Salary",
+       y = "Predicted Points Per Game",
+       colour = "Player Position")
+
+final_sg_salary
+```
+
+### Small Forward
+
+```{r creating_final_graphs3, echo = FALSE, message = FALSE, warning = FALSE}
+## Small Forward
+sf_pts_hat <- sf %>%
+  mutate(sf_hat = predict(sf_overall_tidy_ppg, newdata = .))
+
+final_sf_salary <- sf_pts_hat %>%
+  ggplot(aes(Salary, sf_hat, colour = Pos, label = player_name)) +
+  geom_point(colour = "black") +
+  geom_text(nudge_y = 1.5, cex = 2) + # Gives the predicted points average against the players salary, to see where the value is. Depending on salary space, we either pick Kevin Durant or Kawhi Leonard at Small Forward as they stand out from the pack of lower priced players.
+  geom_hline(yintercept = 20, colour = "darkorchid2", linetype = "dotted") +
+  geom_vline(xintercept = 15000000, colour = "darkorchid2", linetype = "dotted") + # Divides the graph into sections to indicate where players may be overpriced for their output
+  labs(title = "Predicted Points and Current Salary for Small Forwards",
+       subtitle = "Finding Value in the Small Forward Position",
+       caption = "Finding a cheaper alternative with similar predicted output",
+       x = "Player Salary",
+       y = "Predicted Points Per Game",
+       colour = "Player Position")
+
+final_sf_salary
+```
+
+### Power Forward
+
+```{r creating_final_graphs4, echo = FALSE, message = FALSE, warning = FALSE}
+## Power Forward
+pf_pts_hat <- pf %>%
+  mutate(pf_hat = predict(pf_overall_tidy_ppg, newdata = .))
+
+final_pf_salary <- pf_pts_hat %>%
+  ggplot(aes(Salary, pf_hat, colour = Pos, label = player_name)) +
+  geom_point(colour = "black") +
+  geom_text(nudge_y = 1.5, cex = 2) + # Gives the predicted points average against the players salary, to see where the value is. We select either Julius Randle or Tobias Harris at the Power Forward position. 
+  geom_hline(yintercept = 20, colour = "dodgerblue", linetype = "dotted") +
+  geom_vline(xintercept = 15000000, colour = "dodgerblue", linetype = "dotted") + # Divides the graph into sections to indicate where players may be overpriced for their output
+  labs(title = "Predicted Points and Current Salary for Power Forwards",
+       subtitle = "Finding Value in the Power Forward Position",
+       caption = "Finding a cheaper alternative with similar predicted output",
+       x = "Player Salary",
+       y = "Predicted Points Per Game",
+       colour = "Player Position")
+
+final_pf_salary
+```
+
+### Centres
+
+```{r creating_final_graphs, echo = FALSE, message = FALSE, warning = FALSE}
+# Value in Predicted Output
+## Centres
+c_pts_hat <- centres %>%
+  mutate(c_hat = predict(c_overall_tidy_ppg, newdata = .))
+
+final_c_salary <- c_pts_hat %>%
+  ggplot(aes(Salary, c_hat, colour = Pos, label = player_name)) +
+  geom_point(colour = "black") +
+  geom_text(nudge_y = 1.5, cex = 2) + # Gives the predicted points average against the players salary, to see where the value is. We select Karl-Anthony Towns at Centre. 
+  geom_hline(yintercept = 20, colour = "black", linetype = "dotted") +
+  geom_vline(xintercept = 15000000, colour = "black", linetype = "dotted") + # Divides the graph into sections to indicate where players may be overpriced for their output
+  labs(title = "Predicted Points and Current Salary for Centres",
+        subtitle = "Finding Value in the Centre Position",
+        caption = "Finding a cheaper alternative with similar predicted output",
+        x = "Player Salary",
+        y = "Predicted Points Per Game",
+       colour = "Player Position")
+
+final_c_salary
+```
+
+
+<center>
+# Point Guard
+
+![**Point Guard: Kemba Walker**](docs/kemba-walker.png)  
+
+
+
+
+
+We have chosen Kemba Walker, explain why here.
+
+
+<center>
+# Shooting Guard
+
+![**Shooting Guard: Donovan Mitchll**](docs/donovan-mitchell.png)  
+
+
+
+
+
+We have chosen Donovan Mitchell, explain why here.
+
+
+<center>
+# Small Forward
+
+![**Small Forward: Kevin Durant**](docs/kevin-durant.png)  
+
+
+
+
+
+We have chosen Kevin Durant, explain why here.
+
+
+<center>
+# Power Forward
+
+![**Power Forward: Julius Randle**](docs/julius-randle.png)  
+
+
+
+
+
+We have chosen Julius Randle, explain why here.
+
+
+<center>
+# Centre
+
+![**Centre: Karl-Anthony Towns**](docs/karl-anthony-towns.png)  
+
+
+
+
+
+We have chosen Karl-Anthony Towns, explain why here.
+
+
+</center>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
